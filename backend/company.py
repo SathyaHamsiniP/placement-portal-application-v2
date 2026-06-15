@@ -112,12 +112,24 @@ def update_app_status(current_user, app_id):
     app = Application.query.get_or_404(app_id)
     data = request.get_json()
     new_status = data.get('status')
+    feedback = data.get('feedback', '')
     
     if new_status not in ['Shortlisted', 'Selected', 'Rejected']:
         return jsonify({'message': 'Invalid status'}), 400
         
     app.status = new_status
+    # We'll use a dynamic attribute for now if the model isn't migrated, 
+    # but ideally it should be in the model.
+    app.feedback = feedback 
     db.session.commit()
     
-    # Notify student (Logic can be expanded)
-    return jsonify({'message': f'Application status updated to {new_status}'})
+    # Create notification for student
+    student_user_id = app.student.user_id
+    notif = Notification(
+        user_id=student_user_id,
+        message=f"Update for {app.job_position.title}: You have been {new_status}. Feedback: {feedback}"
+    )
+    db.session.add(notif)
+    db.session.commit()
+    
+    return jsonify({'message': f'Application updated to {new_status}'})

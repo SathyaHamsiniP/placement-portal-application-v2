@@ -70,7 +70,6 @@
                     <h5 class="fw-bold mb-1">Monthly Application Trend</h5>
                     <p class="text-muted extra-small mb-0">See the peak placement season</p>
                   </div>
-                  <button class="btn btn-link text-muted p-0"><i class="bi bi-three-dots fs-5"></i></button>
                 </div>
                 <div class="chart-container" style="height: 380px;">
                   <Line :data="trendChartData" :options="trendChartOptions" />
@@ -90,18 +89,9 @@
                   </div>
                 </div>
               </div>
-
               <div class="fluid-card">
                 <h6 class="text-uppercase text-muted extra-small fw-bold tracking-widest mb-4">Quick Navigation</h6>
                 <div class="list-group list-group-flush gap-2">
-                  <button @click="activeTab = 'shortlisted'" class="list-group-item list-group-item-action border-0 rounded-3 small d-flex justify-content-between align-items-center">
-                    <span><i class="bi bi-star me-3 text-primary"></i> Shortlisted List</span>
-                    <i class="bi bi-chevron-right text-muted-extra"></i>
-                  </button>
-                  <button @click="activeTab = 'post-job'" class="list-group-item list-group-item-action border-0 rounded-3 small d-flex justify-content-between align-items-center">
-                    <span><i class="bi bi-gear me-3 text-primary"></i> Post New Vacancy</span>
-                    <i class="bi bi-chevron-right text-muted-extra"></i>
-                  </button>
                   <button @click="activeTab = 'jobs'" class="list-group-item list-group-item-action border-0 rounded-3 small d-flex justify-content-between align-items-center">
                     <span><i class="bi bi-briefcase me-3 text-primary"></i> Manage All Jobs</span>
                     <i class="bi bi-chevron-right text-muted-extra"></i>
@@ -112,91 +102,107 @@
           </div>
         </div>
 
-        <!-- Management Tables Area -->
+        <!-- Management Units -->
         <div v-else class="management-root">
           <div class="fluid-card min-vh-75">
             <div class="d-flex justify-content-between align-items-center mb-4">
               <div>
-                <h4 class="fw-bold mb-1">{{ activeMenuLabel }}</h4>
+                <h4 v-if="!selectedJob" class="fw-bold mb-1">{{ activeMenuLabel }}</h4>
+                <div v-else class="d-flex align-items-center">
+                  <button @click="selectedJob = null" class="btn btn-link p-0 me-3"><i class="bi bi-arrow-left fs-4 text-dark"></i></button>
+                  <h4 class="fw-bold mb-1">Applicants: {{ selectedJob.title }}</h4>
+                </div>
                 <p class="text-muted extra-small mb-0">Track and manage your recruitment pipeline</p>
               </div>
-              <button v-if="activeTab === 'jobs'" @click="activeTab = 'post-job'" class="btn btn-orange rounded-pill px-4 small">+ Post New Role</button>
             </div>
 
             <!-- Manage Jobs Table -->
-            <div v-if="activeTab === 'jobs'" class="table-responsive mt-4">
+            <div v-if="activeTab === 'jobs' && !selectedJob" class="table-responsive mt-4">
               <table class="table table-hover align-middle border-top">
                 <thead class="text-muted extra-small text-uppercase fw-bold">
-                  <tr><th>ID</th><th>Role Details</th><th>Approval</th><th>Compensation</th><th>Status</th><th>Applications</th><th class="text-end">Actions</th></tr>
+                  <tr><th>ID</th><th>Role Details</th><th>Approval</th><th>Applications</th><th class="text-end">Actions</th></tr>
                 </thead>
                 <tbody class="small fw-medium">
                   <tr v-for="job in jobsData" :key="job.id">
                     <td>#{{ job.id }}</td>
-                    <td>
-                      <div class="fw-bold text-dark">{{ job.title }}</div>
-                      <div class="extra-small text-muted">Created: {{ job.created_at || 'Recent' }}</div>
-                    </td>
-                    <td>
-                      <span :class="['badge rounded-pill px-3', job.verified ? 'bg-success-soft text-success' : 'bg-warning-soft text-warning']">
-                        {{ job.verified ? 'Verified' : 'Pending' }}
-                      </span>
-                    </td>
-                    <td><div class="fw-bold text-dark">{{ job.salary }}</div><div class="extra-small text-muted">Remote / Hybrid</div></td>
-                    <td>
-                      <span :class="['badge rounded-pill px-3', job.status === 'Approved' ? 'bg-success-soft text-success' : 'bg-secondary-soft text-secondary']">
-                        {{ job.status === 'Approved' ? 'Accepting Applications' : 'Closed' }}
-                      </span>
-                    </td>
-                    <td><span class="badge border bg-light text-dark">{{ job.applications_count }} Received</span></td>
+                    <td><div class="fw-bold text-dark">{{ job.title }}</div><div class="extra-small text-muted">{{ job.salary }}</div></td>
+                    <td><span :class="['badge rounded-pill', job.verified ? 'bg-success-soft text-success' : 'bg-warning-soft text-warning']">{{ job.verified ? 'Verified' : 'Pending' }}</span></td>
+                    <td><button @click="viewApplicants(job)" class="btn btn-link btn-sm p-0">{{ job.applications_count }} Received</button></td>
                     <td class="text-end">
-                      <button class="btn btn-light rounded-circle shadow-none border me-1"><i class="bi bi-pencil small"></i></button>
-                      <button class="btn btn-outline-orange rounded-pill px-3 me-1">Close</button>
-                      <button class="btn btn-light rounded-circle shadow-none border text-danger"><i class="bi bi-trash small"></i></button>
+                      <button @click="viewApplicants(job)" class="btn btn-sm btn-outline-primary rounded-pill px-3 me-2">Manage Candidates</button>
                     </td>
                   </tr>
                 </tbody>
               </table>
-              <div v-if="jobsData.length === 0" class="text-center py-5">
-                <i class="bi bi-briefcase display-4 text-light"></i>
-                <p class="text-muted mt-3">You haven't posted any jobs yet.</p>
-              </div>
+            </div>
+
+            <!-- Applicants Details View -->
+            <div v-if="selectedJob" class="applicants-list mt-4">
+              <table class="table table-hover align-middle border-top">
+                <thead class="text-muted extra-small text-uppercase fw-bold">
+                  <tr><th>Student</th><th>Branch / CGPA</th><th>Status</th><th>Applied Date</th><th class="text-end">Action</th></tr>
+                </thead>
+                <tbody class="small fw-medium">
+                  <tr v-for="app in applicants" :key="app.id">
+                    <td>{{ app.student_name }}</td><td>{{ app.branch }} | {{ app.cgpa }}</td>
+                    <td><span :class="['badge rounded-pill', app.status === 'Applied' ? 'bg-light text-dark' : 'bg-primary-soft text-primary']">{{ app.status }}</span></td>
+                    <td class="extra-small text-muted">{{ new Date(app.applied_at).toLocaleDateString() }}</td>
+                    <td class="text-end">
+                      <button @click="openStatusModal(app)" class="btn btn-sm btn-dark rounded-pill px-3">Update Status</button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
 
             <!-- Post Job View -->
             <div v-if="activeTab === 'post-job'" class="post-job-form mx-auto" style="max-width: 800px;">
+              <!-- ... Form (same as before) ... -->
               <form @submit.prevent="handlePostJob">
                 <div class="row g-4 mt-2">
-                  <div class="col-md-12">
-                    <label class="form-label fw-bold small">Job Title</label>
-                    <input v-model="jobForm.title" type="text" class="form-control rounded-3 border-light shadow-none p-3" placeholder="e.g. Senior Software Engineer" required>
-                  </div>
-                  <div class="col-md-6">
-                    <label class="form-label fw-bold small">Compensation (Annual CTC)</label>
-                    <input v-model="jobForm.salary" type="text" class="form-control rounded-3 border-light shadow-none p-3" placeholder="e.g. 12 - 15 LPA" required>
-                  </div>
-                  <div class="col-md-6">
-                    <label class="form-label fw-bold small">Application Deadline</label>
-                    <input v-model="jobForm.deadline" type="date" class="form-control rounded-3 border-light shadow-none p-3" required>
-                  </div>
-                  <div class="col-md-12">
-                    <label class="form-label fw-bold small">Job Description</label>
-                    <textarea v-model="jobForm.description" class="form-control rounded-3 border-light shadow-none p-3" rows="5" placeholder="Describe roles, responsibilities and requirements..." required></textarea>
-                  </div>
-                  <div class="col-12 text-center mt-5">
-                    <button type="submit" class="btn btn-orange rounded-pill px-5 py-3 fw-bold shadow">Submit Job for Verification</button>
+                  <div class="col-md-12"><label class="form-label fw-bold small">Job Title</label>
+                    <input v-model="jobForm.title" type="text" class="form-control rounded-3 border-light p-3" placeholder="e.g. Software Engineer" required></div>
+                  <div class="col-md-6"><label class="form-label fw-bold small">Compensation</label>
+                    <input v-model="jobForm.salary" type="text" class="form-control rounded-3 border-light p-3" placeholder="e.g. 10 LPA" required></div>
+                  <div class="col-md-6"><label class="form-label fw-bold small">Deadline</label>
+                    <input v-model="jobForm.deadline" type="date" class="form-control rounded-3 border-light p-3" required></div>
+                  <div class="col-md-12"><label class="form-label fw-bold small">Description</label>
+                    <textarea v-model="jobForm.description" class="form-control rounded-3 border-light p-3" rows="4" required></textarea></div>
+                  <div class="col-12 text-center mt-4">
+                    <button type="submit" class="btn btn-orange rounded-pill px-5 py-3 fw-bold">Submit Job</button>
                   </div>
                 </div>
               </form>
             </div>
-
-            <!-- Applicants View placeholder -->
-            <div v-if="activeTab === 'applicants'" class="text-center py-5">
-              <i class="bi bi-people display-4 text-light"></i>
-              <h5 class="text-muted mt-3">Select a job from 'Manage Jobs' to view specific applicants</h5>
-            </div>
           </div>
         </div>
       </div>
+
+      <!-- Status Update Modal -->
+      <div v-if="showStatusModal" class="modal-overlay d-flex align-items-center justify-content-center">
+        <div class="fluid-card shadow-lg" style="max-width: 500px;">
+          <h5 class="fw-bold mb-3">Update Application Status</h5>
+          <label class="small text-muted mb-2 d-block">Student: {{ currentApp.student_name }}</label>
+          
+          <select v-model="statusUpdate.status" class="form-select mb-4 p-3 rounded-3 border-light">
+            <option value="Review Pending">Move to Review</option>
+            <option value="Shortlisted">Shortlist Candidate</option>
+            <option value="Interviewed">Mark as Interviewed</option>
+            <option value="Offered">Extend Offer</option>
+            <option value="Placed">Confirm Placement (Final)</option>
+            <option value="Rejected">Reject Application</option>
+          </select>
+          
+          <label class="small fw-bold mb-2 d-block">Corporate Feedback</label>
+          <textarea v-model="statusUpdate.feedback" class="form-control mb-4 p-3 rounded-3 border-light" rows="3" placeholder="Provide feedback for the student..."></textarea>
+          
+          <div class="d-flex gap-2">
+            <button @click="showStatusModal = false" class="btn btn-light flex-fill rounded-pill">Cancel</button>
+            <button @click="submitStatusUpdate" class="btn btn-orange flex-fill rounded-pill fw-bold">Confirm Update</button>
+          </div>
+        </div>
+      </div>
+
     </main>
   </div>
 </template>
@@ -216,16 +222,21 @@ const activeTab = ref('dashboard')
 const username = ref(localStorage.getItem('username'))
 const stats = ref({ recruitment_status: {} })
 const jobsData = ref([])
+const selectedJob = ref(null)
+const applicants = ref([])
+
+// Modal States
+const showStatusModal = ref(false)
+const currentApp = ref(null)
+const statusUpdate = ref({ status: 'Shortlisted', feedback: '' })
 
 const companyMenu = [
   { id: 'dashboard', label: 'Dashboard', icon: 'bi-grid-fill' },
   { id: 'post-job', label: 'Post Job', icon: 'bi-plus-circle-fill' },
-  { id: 'jobs', label: 'Manage Jobs', icon: 'bi-list-ul' },
-  { id: 'applicants', label: 'Applicants Across all Jobs', icon: 'bi-people-fill' },
-  { id: 'shortlisted', label: 'Shortlisted', icon: 'bi-star-fill' }
+  { id: 'jobs', label: 'Manage Jobs', icon: 'bi-list-ul' }
 ]
 
-const jobForm = ref({ title: '', salary: '', deadline: '', description: '', allowed_branches: ['CSE', 'ECE'] })
+const jobForm = ref({ title: '', salary: '', deadline: '', description: '', allowed_branches: ['CSE'] })
 
 const refreshData = async () => {
   const token = localStorage.getItem('token')
@@ -241,43 +252,44 @@ const refreshData = async () => {
   } catch (err) { console.error('API Error:', err) }
 }
 
-const handlePostJob = async () => {
-  try {
-    await axios.post('http://127.0.0.1:5000/api/company/post-job', jobForm.value, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    })
-    alert('Job submitted successfully!')
-    activeTab.value = 'jobs'
-  } catch (err) { alert(err.response?.data?.message || 'Error posting job') }
+const viewApplicants = async (job) => {
+  selectedJob.value = job
+  const res = await axios.get(`http://127.0.0.1:5000/api/company/applicants/${job.id}`, {
+    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+  })
+  applicants.value = res.data
 }
 
-watch(activeTab, refreshData)
+const openStatusModal = (app) => {
+  currentApp.value = app
+  statusUpdate.value = { status: app.status === 'Applied' ? 'Shortlisted' : app.status, feedback: '' }
+  showStatusModal.value = true
+}
+
+const submitStatusUpdate = async () => {
+  try {
+    await axios.post(`http://127.0.0.1:5000/api/company/application/update-status/${currentApp.value.id}`, statusUpdate.value, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    })
+    showStatusModal.value = false
+    viewApplicants(selectedJob.value)
+    refreshData()
+  } catch (err) { alert('Error updating status') }
+}
+
+const handlePostJob = async () => {
+  await axios.post('http://127.0.0.1:5000/api/company/post-job', jobForm.value, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } })
+  activeTab.value = 'jobs'; refreshData()
+}
+
+watch(activeTab, () => { selectedJob.value = null; refreshData() })
 onMounted(refreshData)
 
 const handleLogout = () => { localStorage.clear(); router.push('/login') }
 const activeMenuLabel = computed(() => companyMenu.find(item => item.id === activeTab.value)?.label || 'Overview')
 
-// Mock Chart Data for Monthly Trend
-const trendChartData = {
-  labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-  datasets: [{
-    label: 'Applications',
-    borderColor: '#f97316',
-    backgroundColor: 'rgba(249, 115, 22, 0.1)',
-    data: [0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0],
-    borderWidth: 3, tension: 0.4, pointRadius: 5, fill: true
-  }]
-}
-
-const trendChartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: { legend: { display: false } },
-  scales: {
-    y: { grid: { color: '#f1f5f9' }, min: 0, max: 5 },
-    x: { grid: { display: false } }
-  }
-}
+const trendChartData = { labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], datasets: [{ label: 'Applications', borderColor: '#f97316', backgroundColor: 'rgba(249, 115, 22, 0.1)', data: [0, 0, 0, 0, 5, 2, 0, 0, 0, 0, 0, 0], borderWidth: 3, tension: 0.4, fill: true }]}
+const trendChartOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { grid: { color: '#f1f5f9' }, min: 0, max: 10 }, x: { grid: { display: false } } } }
 </script>
 
 <style scoped>
@@ -285,28 +297,16 @@ const trendChartOptions = {
 .main-workspace { flex: 1; margin-left: 240px; display: flex; flex-direction: column; width: calc(100vw - 240px); }
 .top-navbar { height: 75px; z-index: 10; display: flex; align-items: center; }
 .portal-title-left { font-size: 0.8rem; font-weight: 800; text-transform: uppercase; color: #64748b; letter-spacing: 0.1rem; }
-
 .avatar-circle-company { width: 42px; height: 42px; background-color: #0f172a; color: white; display: flex; align-items: center; justify-content: center; border-radius: 12px; font-weight: 800; }
 .extra-small { font-size: 10px; }
-.text-muted-extra { font-size: 10px; opacity: 0.3; }
-
-.fluid-card { background: white; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); padding: 1.5rem; border: 1px solid #f1f5f9; transition: transform 0.2s ease; width: 100%; }
+.fluid-card { background: white; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); padding: 1.5rem; border: 1px solid #f1f5f9; width: 100%; transition: transform 0.2s ease; }
 .border-s-orange { border-left: 6px solid #f97316; }
-
 .btn-orange { background-color: #f97316; color: white; border: none; }
-.btn-orange:hover { background-color: #ea580c; color: white; }
-.btn-outline-orange { border: 1px solid #f97316; color: #f97316; }
-.btn-outline-orange:hover { background: #f97316; color: white; }
-
 .bg-success-soft { background: #d1fae5; }
 .bg-warning-soft { background: #fffbeb; }
-.bg-secondary-soft { background: #f1f5f9; }
-
+.bg-primary-soft { background: #eff6ff; }
 .stats-value-small { font-size: 2.2rem; }
 .stat-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: #94a3b8; letter-spacing: 0.05em; margin-top: 0.5rem; }
-
-.list-group-item:hover { background-color: #f8fafc; }
-.tracking-widest { letter-spacing: 0.15em; }
-
+.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); z-index: 1000; }
 @media (max-width: 1200px) { .main-workspace { margin-left: 0; width: 100vw; } }
 </style>
