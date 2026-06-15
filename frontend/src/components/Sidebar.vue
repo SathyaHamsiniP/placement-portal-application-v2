@@ -1,39 +1,30 @@
 <template>
-  <div class="sidebar d-flex flex-column flex-shrink-0 p-3 bg-white shadow-sm h-100">
-    <div class="d-flex align-items-center mb-4 mb-md-0 me-md-auto text-decoration-none">
-      <div class="logo-box bg-primary text-white me-2">
-        <i class="bi bi-mortarboard-fill"></i>
-      </div>
-      <span class="fs-5 fw-bold text-dark">Portal.v2</span>
+  <div class="sidebar d-flex flex-column text-white shadow-lg">
+    <div class="sidebar-header p-4 pb-2">
+      <span class="small fw-bold tracking-tight text-orange text-uppercase">Controls</span>
     </div>
-    <hr>
-    <ul class="nav nav-pills flex-column mb-auto gap-2">
-      <li v-for="item in menuItems" :key="item.id" class="nav-item">
-        <a 
-          href="#" 
-          class="nav-link py-3 d-flex align-items-center" 
-          :class="{ active: activeTab === item.id }"
-          @click.prevent="$emit('update:activeTab', item.id)"
-        >
-          <i :class="`bi ${item.icon} me-3 fs-5`"></i>
-          <span>{{ item.label }}</span>
-        </a>
-      </li>
-    </ul>
-    <hr>
-    <div class="dropdown">
-      <div class="d-flex align-items-center text-dark text-decoration-none p-2 status-user">
-        <div class="avatar bg-secondary-soft text-secondary me-2">
-          {{ username?.[0]?.toUpperCase() || 'U' }}
-        </div>
-        <div class="user-info">
-          <div class="fw-bold text-truncate" style="max-width: 100px;">{{ username }}</div>
-          <small class="text-muted">{{ role }}</small>
-        </div>
-        <button @click="$emit('logout')" class="btn btn-link text-danger ms-auto p-0 border-0">
-          <i class="bi bi-box-arrow-right fs-5"></i>
-        </button>
-      </div>
+    
+    <div class="sidebar-nav flex-grow-1 overflow-auto px-2 mt-3 no-scrollbar">
+      <ul class="nav nav-pills flex-column gap-1">
+        <li v-for="item in menuItems" :key="item.id" class="nav-item">
+          <a 
+            href="#" 
+            class="nav-link d-flex align-items-center px-3 py-2" 
+            :class="{ active: activeTab === item.id }"
+            @click.prevent="$emit('update:activeTab', item.id)"
+          >
+            <i :class="`bi ${item.icon} me-3 fs-6`"></i>
+            <span class="menu-text">{{ item.label }}</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    <div class="sidebar-footer p-3 mt-auto">
+      <button @click="$emit('logout')" class="btn btn-link nav-link text-white-50 p-2 w-100 text-start d-flex align-items-center hover-white border-0">
+        <i class="bi bi-box-arrow-left me-3 fs-5"></i>
+        <span class="menu-text">Logout</span>
+      </button>
     </div>
   </div>
 </template>
@@ -45,74 +36,62 @@ defineProps({
   username: { type: String, default: 'User' },
   role: { type: String, default: 'Member' }
 })
-
 defineEmits(['update:activeTab', 'logout'])
 </script>
 
 <style scoped>
 .sidebar {
-  width: 260px;
+  width: 240px;
+  background-color: #0f172a;
+  height: 100vh;
   position: fixed;
   left: 0;
   top: 0;
-  bottom: 0;
   z-index: 1000;
+  font-family: 'Inter', sans-serif;
+  overflow: hidden;
 }
 
-.logo-box {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  font-size: 1.2rem;
-}
+.text-orange { color: #f97316 !important; }
 
 .nav-link {
-  color: #6c757d;
-  font-weight: 500;
-  border-radius: 12px;
-  transition: all 0.2s ease;
+  color: #94a3b8;
+  border-radius: 10px;
+  transition: color 0.1s ease, background-color 0.1s ease;
+  font-size: 0.85rem;
 }
 
 .nav-link:hover {
-  background-color: #f8f9fa;
-  color: #0d6efd;
+  color: #fff;
+  background-color: rgba(255, 255, 255, 0.05);
 }
 
-.nav-link.active {
-  background-color: #0d6efd;
-  color: white !important;
-  box-shadow: 0 4px 12px rgba(13, 110, 253, 0.25);
+.sidebar .nav-link.active {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%) !important;
+  color: #fff !important;
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.2);
+  transition: none !important; /* Immediate switch to avoid blue glimpse */
 }
 
-.avatar {
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { 
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
 }
 
-.bg-secondary-soft { background-color: #e9ecef; }
-
-.status-user {
-  background-color: #fcfcfc;
-  border-radius: 12px;
+.menu-text {
+  font-weight: 500;
+  letter-spacing: 0.01em;
 }
 
-.user-info {
-  line-height: 1.2;
+.hover-white:hover {
+  color: #fff !important;
 }
 
-@media (max-width: 768px) {
-  .sidebar {
-    width: 100%;
-    position: relative;
-    height: auto !important;
-  }
+@media (max-width: 991px) {
+  .sidebar { width: 80px; }
+  .sidebar span { display: none; }
+  .nav-link { justify-content: center; padding: 12px !important; }
+  .nav-link i { margin-right: 0 !important; }
 }
 </style>

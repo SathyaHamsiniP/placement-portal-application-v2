@@ -128,3 +128,24 @@ def delete_company(current_user, company_id):
     db.session.delete(user)
     db.session.commit()
     return jsonify({'message': 'Company removed successfully'})
+@admin_bp.route('/applications', methods=['GET'])
+@token_required
+def get_applications(current_user):
+    if current_user.role != 'Admin':
+        return jsonify({'message': 'Unauthorized'}), 403
+    
+    apps = Application.query.all()
+    output = []
+    for app in apps:
+        student = Student.query.get(app.student_id)
+        job = JobPosition.query.get(app.job_id)
+        company = Company.query.get(job.company_id)
+        output.append({
+            'id': app.id,
+            'student_name': student.full_name,
+            'job_title': job.title,
+            'company_name': company.name,
+            'status': app.status,
+            'applied_on': app.applied_on.isoformat()
+        })
+    return jsonify(output)
