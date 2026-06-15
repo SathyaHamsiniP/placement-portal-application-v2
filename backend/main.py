@@ -1,7 +1,10 @@
 from flask import Flask
+from flask_cors import CORS
 from .database import db
 from .models import User, Company, Student, JobPosition, Application, Placement, Notification
-
+from .auth import auth_bp
+from .admin import admin_bp
+from .company import company_bp
 import os
 
 def create_app():
@@ -18,15 +21,11 @@ def create_app():
     app.config['SECRET_KEY'] = 'sathya-key'
     
     db.init_app(app)
-    
-    from .auth import auth_bp
-    app.register_blueprint(auth_bp, url_prefix='/api/auth')
-    
-    from .admin import admin_bp
-    app.register_blueprint(admin_bp, url_prefix='/api/admin')
-    
-    from flask_cors import CORS
     CORS(app)
+    
+    app.register_blueprint(auth_bp, url_prefix='/api/auth')
+    app.register_blueprint(admin_bp, url_prefix='/api/admin')
+    app.register_blueprint(company_bp, url_prefix='/api/company')
     
     @app.route('/')
     def index():
