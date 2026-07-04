@@ -40,7 +40,7 @@
                 <div class="stat-label">Partner Companies</div>
               </div>
               <div class="stat-col flex-fill border-start">
-                <h1 class="stats-value-small fw-bold mb-0 text-primary">5%</h1>
+                <h1 class="stats-value-small fw-bold mb-0 text-primary">{{ stats.placement_rate || 0 }}%</h1>
                 <div class="stat-label">Placement Rate</div>
               </div>
               <div class="stat-col flex-fill border-start">
@@ -105,9 +105,9 @@
               <div class="d-flex gap-2">
                 <div v-if="activeTab !== 'approvals'" class="search-box position-relative">
                   <i class="bi bi-search position-absolute start-0 top-50 translate-middle-y ms-3 text-muted"></i>
-                  <input type="text" v-model="searchQuery" class="form-control ps-5 rounded-pill border-light-subtle extra-small py-2" :placeholder="`Search ${activeTab}...`">
+                  <input type="text" v-model="searchQuery" class="form-control ps-5 rounded-3 border-light-subtle extra-small py-2" :placeholder="`Search ${activeTab}...`">
                 </div>
-                <button @click="refreshData" class="btn btn-light rounded-pill btn-sm px-3 shadow-none border">
+                <button @click="refreshData" class="btn btn-light rounded-3 btn-sm px-3 shadow-none border">
                   <i class="bi bi-arrow-clockwise me-1"></i> Refresh
                 </button>
               </div>
@@ -133,15 +133,18 @@
                     <th>Type</th><th>Name / Title</th><th>Entity</th><th>Requested Date</th><th class="text-end">Action</th>
                   </tr>
                 </thead>
-                <tbody class="small fw-medium">
+                <tbody class="small">
                   <!-- Students -->
                   <template v-if="activeTab === 'students'">
                     <tr v-for="std in filteredData" :key="std.id">
                       <td><div class="d-flex align-items-center"><div class="avatar-sm me-2">{{ std.full_name[0] }}</div>{{ std.full_name }}</div></td>
                       <td>{{ std.roll_number }}</td>
-                      <td><span class="badge bg-light text-dark border">{{ std.branch }}</span></td>
-                      <td><span :class="['badge rounded-pill px-3', std.is_active ? 'bg-success-soft text-success' : 'bg-danger-soft text-danger']">{{ std.is_active ? 'Active' : 'Blacklisted' }}</span></td>
-                      <td class="text-end"><button @click="toggleActive(std.user_id)" :class="['btn btn-sm rounded-pill px-3', std.is_active ? 'btn-outline-danger' : 'btn-outline-success']">{{ std.is_active ? 'Blacklist' : 'Activate' }}</button></td>
+                      <td><span class="badge bg-light text-dark border rounded">{{ std.branch }}</span></td>
+                      <td><span :class="['badge rounded px-3', std.is_active ? 'bg-success-soft text-success' : 'bg-danger-soft text-danger']">{{ std.is_active ? 'Active' : 'Blacklisted' }}</span></td>
+                      <td class="text-end">
+                        <button @click="toggleActive(std.user_id)" class="btn btn-sm btn-outline-dark rounded-3 px-3 me-2" style="min-width:90px">{{ std.is_active ? 'Blacklist' : 'Activate' }}</button>
+                        <button @click="deleteStudent(std.id)" class="btn btn-sm btn-outline-danger rounded-3 px-3" style="min-width:80px">Delete</button>
+                      </td>
                     </tr>
                   </template>
 
@@ -149,11 +152,12 @@
                   <template v-if="activeTab === 'companies'">
                     <tr v-for="comp in filteredData" :key="comp.id">
                       <td>{{ comp.name }}</td><td>{{ comp.industry }}</td>
-                      <td><span :class="['badge rounded-pill', comp.is_approved ? 'bg-success' : 'bg-warning']">{{ comp.is_approved ? 'Verified' : 'Pending' }}</span></td>
-                      <td><span :class="['badge rounded-pill', comp.is_active ? 'bg-success-soft text-success' : 'bg-danger-soft text-danger']">{{ comp.is_active ? 'Enabled' : 'Deactivated' }}</span></td>
-                      <td class="text-end">
-                        <button v-if="!comp.is_approved" @click="approveCompany(comp.id)" class="btn btn-sm btn-success rounded-pill px-3 me-2">Approve</button>
-                        <button @click="toggleActive(comp.user_id)" class="btn btn-sm btn-outline-danger rounded-pill px-3">Toggle Status</button>
+                      <td><span :class="['badge rounded', comp.is_approved ? 'bg-success' : 'bg-warning']">{{ comp.is_approved ? 'Verified' : 'Pending' }}</span></td>
+                      <td><span :class="['badge rounded', comp.is_active ? 'bg-success-soft text-success' : 'bg-danger-soft text-danger']">{{ comp.is_active ? 'Enabled' : 'Deactivated' }}</span></td>
+                      <td class="text-end text-nowrap">
+                        <button v-if="!comp.is_approved" @click="approveCompany(comp.id)" class="btn btn-sm btn-outline-dark rounded-3 px-3 me-2" style="min-width:90px">Approve</button>
+                        <button @click="toggleActive(comp.user_id)" class="btn btn-sm btn-outline-dark rounded-3 px-3 me-2" style="min-width:90px">{{ comp.is_active ? 'Blacklist' : 'Activate' }}</button>
+                        <button @click="deleteCompany(comp.id)" class="btn btn-sm btn-outline-danger rounded-3 px-3" style="min-width:80px">Delete</button>
                       </td>
                     </tr>
                   </template>
@@ -162,10 +166,10 @@
                   <template v-if="activeTab === 'jobs'">
                     <tr v-for="job in filteredData" :key="job.id">
                       <td>{{ job.title }}</td><td>{{ job.company_name }}</td><td>{{ job.salary }}</td>
-                      <td><span :class="['badge rounded-pill', job.status === 'Approved' ? 'bg-success' : 'bg-warning']">{{ job.status }}</span></td>
+                      <td><span :class="['badge rounded', job.status === 'Approved' ? 'bg-success' : 'bg-warning']">{{ job.status }}</span></td>
                       <td class="text-end">
-                        <button v-if="job.status === 'Pending'" @click="approveJob(job.id)" class="btn btn-sm btn-success rounded-pill px-3 me-2">Verify</button>
-                        <button class="btn btn-sm btn-outline-secondary rounded-pill px-3">View Applications</button>
+                        <button v-if="job.status === 'Pending'" @click="approveJob(job.id)" class="btn btn-sm btn-outline-dark rounded-3 px-3 me-2" style="min-width:90px">Verify</button>
+                        <button class="btn btn-sm btn-outline-dark rounded-3 px-3" style="min-width:90px">View</button>
                       </td>
                     </tr>
                   </template>
@@ -186,7 +190,7 @@
                       <td>{{ item.name }}</td><td>{{ item.entity }}</td>
                       <td class="extra-small text-muted">Pending Review</td>
                       <td class="text-end">
-                        <button @click="item.type === 'company' ? approveCompany(item.id) : approveJob(item.id)" class="btn btn-sm btn-primary rounded-pill px-3">Quick Approve</button>
+                        <button @click="item.type === 'company' ? approveCompany(item.id) : approveJob(item.id)" class="btn btn-sm btn-outline-dark rounded-3 px-3" style="min-width:120px">Quick Approve</button>
                       </td>
                     </tr>
                   </template>
@@ -208,7 +212,7 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
 import Sidebar from '../../components/Sidebar.vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import axios from 'axios'
 import { Bar, Line, Doughnut } from 'vue-chartjs'
 import { Chart as ChartJS, Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale, PointElement, LineElement, ArcElement } from 'chart.js'
@@ -216,7 +220,21 @@ import { Chart as ChartJS, Title, Tooltip, Legend, BarElement, CategoryScale, Li
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale, PointElement, LineElement, ArcElement)
 
 const router = useRouter()
-const activeTab = ref('dashboard')
+const route = useRoute()
+const activeTab = ref(route.hash ? route.hash.substring(1) : 'dashboard')
+
+watch(activeTab, (newTab) => {
+  if (route.hash !== `#${newTab}`) {
+    router.push({ hash: `#${newTab}` })
+  }
+})
+
+watch(() => route.hash, (newHash) => {
+  const tab = newHash ? newHash.substring(1) : 'dashboard'
+  if (activeTab.value !== tab) {
+    activeTab.value = tab
+  }
+})
 const username = ref(localStorage.getItem('username'))
 const searchQuery = ref('')
 const stats = ref({})
@@ -272,6 +290,18 @@ const approveCompany = async (id) => {
 
 const approveJob = async (id) => {
   await axios.post(`http://127.0.0.1:5000/api/admin/job/approve/${id}`, {}, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } })
+  refreshData()
+}
+
+const deleteCompany = async (id) => {
+  if (!confirm('Are you sure you want to completely delete this company?')) return
+  await axios.delete(`http://127.0.0.1:5000/api/admin/company/${id}`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } })
+  refreshData()
+}
+
+const deleteStudent = async (id) => {
+  if (!confirm('Are you sure you want to completely delete this student?')) return
+  await axios.delete(`http://127.0.0.1:5000/api/admin/student/${id}`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } })
   refreshData()
 }
 

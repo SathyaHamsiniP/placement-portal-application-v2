@@ -72,6 +72,7 @@ def register_company():
     company_profile = Company(
         user_id=new_user.id,
         name=data['name'],
+        industry=data.get('industry', 'Technology'),
         hr_contact=data['hr_contact'],
         is_approved=False # Pending admin approval
     )
@@ -100,7 +101,7 @@ def login():
     token = jwt.encode({
         'user_id': user.id,
         'role': user.role,
-        'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24)
+        'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)
     }, current_app.config['SECRET_KEY'], algorithm="HS256")
     
     return jsonify({

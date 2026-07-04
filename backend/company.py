@@ -21,6 +21,8 @@ def get_company_stats(current_user):
     shortlisted = Application.query.filter(Application.job_id.in_(job_ids), Application.status == 'Shortlisted').count() if job_ids else 0
     
     stats = {
+        'company_name': company.name,
+        'industry': company.industry,
         'jobs_posted': len(company.job_positions),
         'active_applications': total_apps,
         'verified_jobs': len([j for j in company.job_positions if j.status == 'Approved']),
@@ -94,11 +96,18 @@ def get_applicants(current_user, job_id):
         student = Student.query.get(app.student_id)
         output.append({
             'id': app.id,
+            'student_id': student.id,
             'student_name': student.full_name,
             'roll_number': student.roll_number,
             'branch': student.branch,
             'cgpa': student.cgpa,
+            'grad_year': student.grad_year,
+            'skills': student.skills or [],
+            'education_details': student.education_details or '',
+            'experience': student.experience or '',
             'status': app.status,
+            'feedback': app.feedback or '',
+            'interview_date': app.interview_date.isoformat() if app.interview_date else None,
             'applied_at': app.applied_at.isoformat()
         })
     return jsonify(output)
@@ -113,21 +122,41 @@ def update_app_status(current_user, app_id):
     data = request.get_json()
     new_status = data.get('status')
     feedback = data.get('feedback', '')
+    interview_date_str = data.get('interview_date')
     
-    if new_status not in ['Shortlisted', 'Selected', 'Rejected']:
+    valid_statuses = ['Applied', 'Review Pending', 'Shortlisted', 'Interviewed', 'Offered', 'Placed', 'Rejected']
+    if new_status not in valid_statuses:
         return jsonify({'message': 'Invalid status'}), 400
         
     app.status = new_status
-    # We'll use a dynamic attribute for now if the model isn't migrated, 
-    # but ideally it should be in the model.
-    app.feedback = feedback 
+    app.feedback = feedback
+    
+    if interview_date_str:
+        try:
+            app.interview_date = datetime.fromisoformat(interview_date_str.replace('Z', ''))
+        except (ValueError, TypeError):
+            pass
+            
+    if new_status == 'Placed':
+        from .models import Placement
+        # check if model placement exists
+        existing_placement = Placement.query.filter_by(student_id=app.student_id, company_id=app.job_position.company_id).first()
+        if not existing_placement:
+            new_placement = Placement(
+                student_id=app.student_id,
+                company_id=app.job_position.company_id,
+                position=app.job_position.title,
+                salary=app.job_position.salary
+            )
+            db.session.add(new_placement)
+            
     db.session.commit()
     
     # Create notification for student
     student_user_id = app.student.user_id
     notif = Notification(
         user_id=student_user_id,
-        message=f"Update for {app.job_position.title}: You have been {new_status}. Feedback: {feedback}"
+        message=f"Update for {app.job_position.title}: You have been marked as {new_status}. Feedback: {feedback}"
     )
     db.session.add(notif)
     db.session.commit()

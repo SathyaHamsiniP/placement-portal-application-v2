@@ -11,11 +11,15 @@ def get_stats(current_user):
     if current_user.role != 'Admin':
         return jsonify({'message': 'Unauthorized'}), 403
         
+    placed = Application.query.filter_by(status='Placed').count()
+    total_students = Student.query.count()
+    placement_rate = round((placed / total_students * 100), 1) if total_students > 0 else 0
     stats = {
-        'total_students': Student.query.count(),
+        'total_students': total_students,
         'total_companies': Company.query.count(),
         'total_jobs': JobPosition.query.count(),
         'total_applications': Application.query.count(),
+        'placement_rate': placement_rate,
         'pending_approvals': Company.query.filter_by(is_approved=False).count() + \
                              JobPosition.query.filter_by(status='Pending').count()
     }
@@ -128,6 +132,19 @@ def delete_company(current_user, company_id):
     db.session.delete(user)
     db.session.commit()
     return jsonify({'message': 'Company removed successfully'})
+
+@admin_bp.route('/student/<int:student_id>', methods=['DELETE'])
+@token_required
+def delete_student(current_user, student_id):
+    if current_user.role != 'Admin':
+        return jsonify({'message': 'Unauthorized'}), 403
+    
+    student = Student.query.get_or_404(student_id)
+    user = User.query.get(student.user_id)
+    db.session.delete(student)
+    db.session.delete(user)
+    db.session.commit()
+    return jsonify({'message': 'Student removed successfully'})
 @admin_bp.route('/applications', methods=['GET'])
 @token_required
 def get_applications(current_user):
@@ -146,6 +163,45 @@ def get_applications(current_user):
             'job_title': job.title,
             'company_name': company.name,
             'status': app.status,
-            'applied_on': app.applied_on.isoformat()
+            'applied_on': app.applied_at.isoformat()
         })
     return jsonify(output)
+@admin_bp.route('/student/<int:student_id>', methods=['GET'])
+@token_required
+def get_student_profile(current_user, student_id):
+    if current_user.role not in ['Admin', 'Company']:
+        return jsonify({'message': 'Unauthorized'}), 403
+
+    student = Student.query.get_or_404(student_id)
+    user = User.query.get(student.user_id)
+
+    apps = Application.query.filter_by(student_id=student.id).all()
+    history = []
+    for app in apps:
+        job = JobPosition.query.get(app.job_id)
+        company = Company.query.get(job.company_id)
+        history.append({
+            'id': app.id,
+            'job_title': job.title,
+            'company_name': company.name,
+            'salary': job.salary,
+            'status': app.status,
+            'feedback': app.feedback,
+            'interview_date': app.interview_date.isoformat() if app.interview_date else None,
+            'applied_at': app.applied_at.isoformat()
+        })
+
+    return jsonify({
+        'id': student.id,
+        'full_name': student.full_name,
+        'roll_number': student.roll_number,
+        'branch': student.branch,
+        'cgpa': student.cgpa,
+        'grad_year': student.grad_year,
+        'skills': student.skills or [],
+        'education_details': student.education_details or '',
+        'experience': student.experience or '',
+        'is_active': user.is_active,
+        'email': user.email,
+        'application_history': history
+    })

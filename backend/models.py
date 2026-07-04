@@ -43,6 +43,8 @@ class Student(db.Model):
     grad_year = db.Column(db.Integer)
     resume_url = db.Column(db.String(255))
     skills = db.Column(db.JSON)  # Stores list of skills
+    education_details = db.Column(db.Text)
+    experience = db.Column(db.Text)
 
     # Relationships
     applications = db.relationship('Application', backref='student', lazy=True)
@@ -70,6 +72,7 @@ class Application(db.Model):
     job_id = db.Column(db.Integer, db.ForeignKey('job_position.id'), nullable=False)
     status = db.Column(db.String(20), default='Applied')  # Applied, Shortlisted, Selected, Rejected
     feedback = db.Column(db.Text)
+    interview_date = db.Column(db.DateTime)
     applied_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Placement(db.Model):

@@ -3,7 +3,7 @@
     <Sidebar 
       v-model:activeTab="activeTab" 
       :menuItems="companyMenu"
-      :username="username"
+      :username="stats?.company_name || username"
       role="Corporate Partner"
       @logout="handleLogout"
     />
@@ -16,9 +16,9 @@
             <h6 class="portal-title-left mb-0">Campus Placement Portal</h6>
           </div>
           <div class="user-profile-meta d-flex align-items-center">
-            <div class="avatar-circle-company me-3">{{ username?.[0]?.toUpperCase() }}</div>
+            <div class="avatar-circle-company me-3">{{ (stats?.company_name || username)?.[0]?.toUpperCase() }}</div>
             <div class="profile-text text-start">
-              <div class="fw-bold text-dark small leading-tight">{{ username }} Inc.</div>
+              <div class="fw-bold text-dark small leading-tight">{{ stats?.company_name || (username + ' Inc.') }}</div>
               <div class="text-muted extra-small">Active Session</div>
             </div>
           </div>
@@ -32,8 +32,8 @@
           <div class="fluid-card mb-4 mt-1 border-s-orange">
             <div class="d-flex justify-content-between align-items-center">
               <div>
-                <h4 class="fw-bold mb-0 text-dark">{{ username }} Inc.</h4>
-                <p class="text-muted small text-uppercase tracking-widest mb-0">SOFTWARE | MANAGEMENT CENTER</p>
+                <h4 class="fw-bold mb-0 text-dark">{{ stats?.company_name || (username + ' Inc.') }}</h4>
+                <p class="text-muted small text-uppercase tracking-widest mb-0">{{ stats?.industry || 'SOFTWARE' }} | MANAGEMENT CENTER</p>
               </div>
               <button @click="activeTab = 'post-job'" class="btn btn-orange rounded-pill px-4 shadow-sm fw-bold">Create New Job</button>
             </div>
@@ -126,10 +126,10 @@
                   <tr v-for="job in jobsData" :key="job.id">
                     <td>#{{ job.id }}</td>
                     <td><div class="fw-bold text-dark">{{ job.title }}</div><div class="extra-small text-muted">{{ job.salary }}</div></td>
-                    <td><span :class="['badge rounded-pill', job.verified ? 'bg-success-soft text-success' : 'bg-warning-soft text-warning']">{{ job.verified ? 'Verified' : 'Pending' }}</span></td>
+                    <td><span :class="['badge rounded', job.verified ? 'bg-success-soft text-success' : 'bg-warning-soft text-warning']">{{ job.verified ? 'Verified' : 'Pending' }}</span></td>
                     <td><button @click="viewApplicants(job)" class="btn btn-link btn-sm p-0">{{ job.applications_count }} Received</button></td>
                     <td class="text-end">
-                      <button @click="viewApplicants(job)" class="btn btn-sm btn-outline-primary rounded-pill px-3 me-2">Manage Candidates</button>
+                      <button @click="viewApplicants(job)" class="btn btn-sm btn-outline-dark rounded-3 px-3 me-2" style="min-width: 140px">Manage Candidates</button>
                     </td>
                   </tr>
                 </tbody>
@@ -144,11 +144,15 @@
                 </thead>
                 <tbody class="small fw-medium">
                   <tr v-for="app in applicants" :key="app.id">
-                    <td>{{ app.student_name }}</td><td>{{ app.branch }} | {{ app.cgpa }}</td>
-                    <td><span :class="['badge rounded-pill', app.status === 'Applied' ? 'bg-light text-dark' : 'bg-primary-soft text-primary']">{{ app.status }}</span></td>
+                    <td>
+                      <button @click="viewStudentProfile(app)" class="btn btn-link p-0 fw-bold text-dark text-decoration-underline extra-small">{{ app.student_name }}</button>
+                      <div class="extra-small text-muted">{{ app.roll_number }}</div>
+                    </td>
+                    <td>{{ app.branch }} | {{ app.cgpa }}</td>
+                    <td><span :class="['badge rounded', app.status === 'Applied' ? 'bg-light text-dark' : 'bg-primary-soft text-primary']">{{ app.status }}</span></td>
                     <td class="extra-small text-muted">{{ new Date(app.applied_at).toLocaleDateString() }}</td>
                     <td class="text-end">
-                      <button @click="openStatusModal(app)" class="btn btn-sm btn-dark rounded-pill px-3">Update Status</button>
+                      <button @click="openStatusModal(app)" class="btn btn-sm btn-outline-dark rounded-3 px-3" style="min-width: 140px">Update Status</button>
                     </td>
                   </tr>
                 </tbody>
@@ -169,7 +173,7 @@
                   <div class="col-md-12"><label class="form-label fw-bold small">Description</label>
                     <textarea v-model="jobForm.description" class="form-control rounded-3 border-light p-3" rows="4" required></textarea></div>
                   <div class="col-12 text-center mt-4">
-                    <button type="submit" class="btn btn-orange rounded-pill px-5 py-3 fw-bold">Submit Job</button>
+                    <button type="submit" class="btn btn-orange rounded-3 px-5 py-3 fw-bold">Submit Job</button>
                   </div>
                 </div>
               </form>
@@ -196,9 +200,67 @@
           <label class="small fw-bold mb-2 d-block">Corporate Feedback</label>
           <textarea v-model="statusUpdate.feedback" class="form-control mb-4 p-3 rounded-3 border-light" rows="3" placeholder="Provide feedback for the student..."></textarea>
           
+          <div v-if="statusUpdate.status === 'Interviewed'" class="mb-4 text-start">
+            <label class="small fw-bold mb-2 d-block">Interview Date & Time</label>
+            <input v-model="statusUpdate.interview_date" type="datetime-local" class="form-control p-3 rounded-3 border-light" required />
+          </div>
+          
           <div class="d-flex gap-2">
-            <button @click="showStatusModal = false" class="btn btn-light flex-fill rounded-pill">Cancel</button>
-            <button @click="submitStatusUpdate" class="btn btn-orange flex-fill rounded-pill fw-bold">Confirm Update</button>
+            <button @click="showStatusModal = false" class="btn btn-light flex-fill rounded-3">Cancel</button>
+            <button @click="submitStatusUpdate" class="btn btn-orange flex-fill rounded-3 fw-bold">Confirm Update</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Student Profile Modal -->
+      <div v-if="showProfileModal" class="modal-overlay d-flex align-items-center justify-content-center">
+        <div class="fluid-card shadow-lg" style="max-width:560px; width:100%; max-height:85vh; overflow-y:auto;">
+          <div class="d-flex justify-content-between align-items-start mb-4">
+            <div>
+              <h5 class="fw-bold mb-1">{{ studentProfile.full_name }}</h5>
+              <div class="extra-small text-muted">{{ studentProfile.roll_number }} &nbsp;·&nbsp; {{ studentProfile.branch }} &nbsp;·&nbsp; {{ studentProfile.grad_year }}</div>
+            </div>
+            <button @click="showProfileModal = false" class="btn btn-light rounded-3 btn-sm"><i class="bi bi-x-lg"></i></button>
+          </div>
+          <div class="row g-3 mb-4">
+            <div class="col-6 p-3 bg-light rounded-3 text-center">
+              <div class="fw-bold fs-4 text-dark">{{ studentProfile.cgpa }}</div>
+              <div class="extra-small text-muted">CGPA / 10.0</div>
+            </div>
+            <div class="col-6 p-3 bg-light rounded-3 text-center">
+              <div class="fw-bold fs-4 text-dark">{{ (studentProfile.application_history || []).length }}</div>
+              <div class="extra-small text-muted">Total Applications</div>
+            </div>
+          </div>
+          <div class="mb-3" v-if="studentProfile.skills && studentProfile.skills.length">
+            <div class="extra-small text-muted text-uppercase fw-bold mb-2">Skills</div>
+            <div class="d-flex flex-wrap gap-2">
+              <span v-for="s in studentProfile.skills" :key="s" class="badge bg-light text-dark border extra-small px-3 py-2">{{ s }}</span>
+            </div>
+          </div>
+          <div class="mb-3" v-if="studentProfile.education_details">
+            <div class="extra-small text-muted text-uppercase fw-bold mb-1">Education</div>
+            <p class="extra-small text-dark mb-0">{{ studentProfile.education_details }}</p>
+          </div>
+          <div class="mb-4" v-if="studentProfile.experience">
+            <div class="extra-small text-muted text-uppercase fw-bold mb-1">Experience</div>
+            <p class="extra-small text-dark mb-0">{{ studentProfile.experience }}</p>
+          </div>
+          <div v-if="studentProfile.application_history && studentProfile.application_history.length">
+            <div class="extra-small text-muted text-uppercase fw-bold mb-2">Application Track Record</div>
+            <div class="table-responsive">
+              <table class="table table-sm align-middle extra-small">
+                <thead class="text-muted text-uppercase"><tr><th>Role</th><th>Company</th><th>Status</th><th>Applied</th></tr></thead>
+                <tbody>
+                  <tr v-for="h in studentProfile.application_history" :key="h.id">
+                    <td class="fw-bold">{{ h.job_title }}</td>
+                    <td>{{ h.company_name }}</td>
+                    <td><span :class="['badge rounded', h.status === 'Placed' ? 'bg-success text-white' : h.status === 'Rejected' ? 'bg-danger text-white' : 'bg-light text-dark border']">{{ h.status }}</span></td>
+                    <td class="text-muted">{{ new Date(h.applied_at).toLocaleDateString() }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
@@ -210,7 +272,7 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
 import Sidebar from '../../components/Sidebar.vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import axios from 'axios'
 import { Line } from 'vue-chartjs'
 import { Chart as ChartJS, Title, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Filler } from 'chart.js'
@@ -218,7 +280,21 @@ import { Chart as ChartJS, Title, Tooltip, Legend, CategoryScale, LinearScale, P
 ChartJS.register(Title, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Filler)
 
 const router = useRouter()
-const activeTab = ref('dashboard')
+const route = useRoute()
+const activeTab = ref(route.hash ? route.hash.substring(1) : 'dashboard')
+
+watch(activeTab, (newTab) => {
+  if (route.hash !== `#${newTab}`) {
+    router.push({ hash: `#${newTab}` })
+  }
+})
+
+watch(() => route.hash, (newHash) => {
+  const tab = newHash ? newHash.substring(1) : 'dashboard'
+  if (activeTab.value !== tab) {
+    activeTab.value = tab
+  }
+})
 const username = ref(localStorage.getItem('username'))
 const stats = ref({ recruitment_status: {} })
 const jobsData = ref([])
@@ -228,7 +304,19 @@ const applicants = ref([])
 // Modal States
 const showStatusModal = ref(false)
 const currentApp = ref(null)
-const statusUpdate = ref({ status: 'Shortlisted', feedback: '' })
+const statusUpdate = ref({ status: 'Shortlisted', feedback: '', interview_date: '' })
+const showProfileModal = ref(false)
+const studentProfile = ref({})
+
+const viewStudentProfile = async (app) => {
+  try {
+    const res = await axios.get(`http://127.0.0.1:5000/api/admin/student/${app.student_id}`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    })
+    studentProfile.value = res.data
+    showProfileModal.value = true
+  } catch (err) { alert('Could not load student profile') }
+}
 
 const companyMenu = [
   { id: 'dashboard', label: 'Dashboard', icon: 'bi-grid-fill' },
@@ -262,7 +350,7 @@ const viewApplicants = async (job) => {
 
 const openStatusModal = (app) => {
   currentApp.value = app
-  statusUpdate.value = { status: app.status === 'Applied' ? 'Shortlisted' : app.status, feedback: '' }
+  statusUpdate.value = { status: app.status === 'Applied' ? 'Shortlisted' : app.status, feedback: '', interview_date: '' }
   showStatusModal.value = true
 }
 

@@ -49,7 +49,15 @@ router.beforeEach((to, from, next) => {
       next()
     }
   } else {
-    next()
+    // If going to login but already authenticated, bounce back to dashboard
+    if ((to.path === '/login' || to.path === '/') && token) {
+      if (role === 'Admin') next('/admin')
+      else if (role === 'Student') next('/student')
+      else if (role === 'Company') next('/company')
+      else next()
+    } else {
+      next()
+    }
   }
 })
 
