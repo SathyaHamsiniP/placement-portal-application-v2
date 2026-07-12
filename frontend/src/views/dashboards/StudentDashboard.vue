@@ -201,9 +201,20 @@
         <!-- Placement History Tab -->
         <div v-else-if="activeTab === 'history'" class="management-root">
           <div class="fluid-card">
-            <h5 class="fw-bold mb-1">My Application History</h5>
-            <p class="text-muted extra-small mb-4">Complete record of all your job applications and their outcomes.</p>
-            <div class="table-responsive">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <div>
+                <h5 class="fw-bold mb-1">My Application History</h5>
+                <p class="text-muted extra-small mb-0">Complete record of all your job applications and their outcomes.</p>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <span v-if="exportStatus" class="extra-small text-muted">{{ exportStatus }}</span>
+                <button @click="exportCSV" :disabled="exportLoading" class="btn btn-sm btn-outline-dark rounded-3 px-3 extra-small" style="min-width:130px">
+                  <i class="bi bi-file-earmark-arrow-down me-1"></i>
+                  {{ exportLoading ? 'Exporting...' : 'Export CSV' }}
+                </button>
+              </div>
+            </div>
+            <div class="table-responsive mt-3">
               <table class="table align-middle">
                 <thead class="extra-small text-uppercase text-muted">
                   <tr>
@@ -466,6 +477,54 @@ const downloadOfferLetter = async (app) => {
   } catch (err) {
     alert(err.response?.data?.message || 'Error downloading offer letter')
   }
+}
+
+const exportLoading = ref(false)
+const exportStatus = ref('')
+
+const exportCSV = async () => {
+  exportLoading.value = true
+  exportStatus.value = 'Starting export...'
+  try {
+    const res = await axios.post('http://127.0.0.1:5000/api/jobs/export/student', {}, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    })
+    const taskId = res.data.task_id
+    exportStatus.value = 'Processing...'
+    pollTask(taskId)
+  } catch (err) {
+    exportStatus.value = 'Export failed.'
+    exportLoading.value = false
+  }
+}
+
+const pollTask = (taskId) => {
+  const interval = setInterval(async () => {
+    try {
+      const res = await axios.get(`http://127.0.0.1:5000/api/jobs/task/${taskId}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      })
+      if (res.data.status === 'SUCCESS') {
+        clearInterval(interval)
+        exportLoading.value = false
+        const file = res.data.result?.file
+        exportStatus.value = file ? `Ready: ${file}` : 'Export complete!'
+        // Trigger download
+        if (file) {
+          const dl = await axios.get(`http://127.0.0.1:5000/api/jobs/exports/${file}`, {
+            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+            responseType: 'blob'
+          })
+          const url = window.URL.createObjectURL(new Blob([dl.data]))
+          const a = document.createElement('a'); a.href = url; a.download = file; a.click()
+        }
+      } else if (res.data.status === 'FAILURE') {
+        clearInterval(interval)
+        exportLoading.value = false
+        exportStatus.value = 'Export failed.'
+      }
+    } catch { clearInterval(interval); exportLoading.value = false }
+  }, 2000)
 }
 
 const filteredJobs = computed(() => {

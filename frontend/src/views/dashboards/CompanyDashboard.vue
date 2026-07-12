@@ -114,6 +114,13 @@
                 </div>
                 <p class="text-muted extra-small mb-0">Track and manage your recruitment pipeline</p>
               </div>
+              <div class="d-flex align-items-center gap-2">
+                <span v-if="exportStatus" class="extra-small text-muted">{{ exportStatus }}</span>
+                <button @click="exportCSV" :disabled="exportLoading" class="btn btn-sm btn-outline-dark rounded-3 px-3 extra-small" style="min-width:130px">
+                  <i class="bi bi-file-earmark-arrow-down me-1"></i>
+                  {{ exportLoading ? 'Exporting...' : 'Export CSV' }}
+                </button>
+              </div>
             </div>
 
             <!-- Manage Jobs Table -->
@@ -378,6 +385,48 @@ const activeMenuLabel = computed(() => companyMenu.find(item => item.id === acti
 
 const trendChartData = { labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], datasets: [{ label: 'Applications', borderColor: '#f97316', backgroundColor: 'rgba(249, 115, 22, 0.1)', data: [0, 0, 0, 0, 5, 2, 0, 0, 0, 0, 0, 0], borderWidth: 3, tension: 0.4, fill: true }]}
 const trendChartOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { grid: { color: '#f1f5f9' }, min: 0, max: 10 }, x: { grid: { display: false } } } }
+
+// ── CSV Export ─────────────────────────────────────────────────────────────────
+const exportLoading = ref(false)
+const exportStatus = ref('')
+
+const exportCSV = async () => {
+  exportLoading.value = true
+  exportStatus.value = 'Starting export...'
+  try {
+    const res = await axios.post('http://127.0.0.1:5000/api/jobs/export/company', {}, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    })
+    const taskId = res.data.task_id
+    exportStatus.value = 'Processing...'
+    const interval = setInterval(async () => {
+      try {
+        const poll = await axios.get(`http://127.0.0.1:5000/api/jobs/task/${taskId}`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        })
+        if (poll.data.status === 'SUCCESS') {
+          clearInterval(interval)
+          exportLoading.value = false
+          const file = poll.data.result?.file
+          exportStatus.value = file ? `Ready: ${file}` : 'Export complete!'
+          if (file) {
+            const dl = await axios.get(`http://127.0.0.1:5000/api/jobs/exports/${file}`, {
+              headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+              responseType: 'blob'
+            })
+            const url = window.URL.createObjectURL(new Blob([dl.data]))
+            const a = document.createElement('a'); a.href = url; a.download = file; a.click()
+          }
+        } else if (poll.data.status === 'FAILURE') {
+          clearInterval(interval); exportLoading.value = false; exportStatus.value = 'Export failed.'
+        }
+      } catch { clearInterval(interval); exportLoading.value = false }
+    }, 2000)
+  } catch {
+    exportStatus.value = 'Export failed.'
+    exportLoading.value = false
+  }
+}
 </script>
 
 <style scoped>
