@@ -314,7 +314,7 @@ def generate_monthly_company_report(self):
     """
     app = _get_app()
     with app.app_context():
-        from .models import Company, JobPosition, Application, User
+        from .models import Company, JobPosition, Application, Student, User
         from .database import db
 
         now = datetime.now(timezone.utc).replace(tzinfo=None)
@@ -343,9 +343,8 @@ def generate_monthly_company_report(self):
 
             rows_html = ""
             for a in apps_this_month:
-                from .models import Student, JobPosition as JP
                 s = Student.query.get(a.student_id)
-                j = JP.query.get(a.job_id)
+                j = JobPosition.query.get(a.job_id)
                 rows_html += (
                     f"<tr><td>{s.full_name if s else 'N/A'}</td>"
                     f"<td>{s.roll_number if s else 'N/A'}</td>"
