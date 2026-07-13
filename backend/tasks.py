@@ -40,6 +40,24 @@ def _instance_dir():
     return d
 
 
+def _mail_ready(app) -> bool:
+    """
+    Returns True only when SMTP credentials are genuinely configured —
+    i.e. not empty and not still containing the placeholder defaults.
+    Logs a clear warning when email is skipped so it's never silent.
+    """
+    PLACEHOLDERS = {"your_email@gmail.com", "your_gmail_app_password", "", None}
+    username = app.config.get("MAIL_USERNAME")
+    password = app.config.get("MAIL_PASSWORD")
+    if username in PLACEHOLDERS or password in PLACEHOLDERS:
+        log.warning(
+            "[MAIL] SMTP not configured — email skipped. "
+            "Set MAIL_USERNAME and MAIL_PASSWORD in your .env file to enable real delivery."
+        )
+        return False
+    return True
+
+
 # ── Task 1: Interview Reminders (Scheduled daily) ─────────────────────────────
 
 @celery_app.task(name="backend.tasks.send_interview_reminders", bind=True)
@@ -92,7 +110,7 @@ def send_interview_reminders(self):
             sent += 1
 
             # Email Dispatch if SMTP is configured
-            if app.config.get('MAIL_USERNAME'):
+            if _mail_ready(app):
                 try:
                     from flask_mail import Message
                     from .database import mail
@@ -262,7 +280,7 @@ def export_student_csv(self, student_id: int):
         db.session.commit()
 
         # Email Dispatch if SMTP is configured
-        if app.config.get('MAIL_USERNAME'):
+        if _mail_ready(app):
             try:
                 from flask_mail import Message
                 from .database import mail
@@ -351,7 +369,7 @@ def export_company_csv(self, company_id: int):
         db.session.commit()
 
         # Email Dispatch if SMTP is configured
-        if app.config.get('MAIL_USERNAME'):
+        if _mail_ready(app):
             try:
                 from flask_mail import Message
                 from .database import mail

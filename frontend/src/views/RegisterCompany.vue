@@ -23,12 +23,43 @@
           </div>
           <div class="field-group">
             <label class="field-label">INDUSTRY</label>
-            <input v-model="form.industry" type="text" class="field-input" placeholder="e.g. Technology, Finance" required />
+            <select v-model="form.industry" class="field-input" required>
+              <option value="" disabled selected>Select Industry</option>
+              <option value="Software">Software</option>
+              <option value="Hardware">Hardware</option>
+              <option value="Finance">Finance</option>
+              <option value="Consulting">Consulting</option>
+              <option value="Cloud">Cloud</option>
+              <option value="AI/ML">AI / ML</option>
+              <option value="E-Commerce">E-Commerce</option>
+              <option value="HealthTech">HealthTech</option>
+              <option value="EdTech">EdTech</option>
+              <option value="Logistics">Logistics</option>
+            </select>
+          </div>
+          <div class="row">
+            <div class="col-md-6">
+              <div class="field-group">
+                <label class="field-label">LOCATION</label>
+                <input v-model="form.location" type="text" class="field-input" placeholder="e.g. Bangalore, India" required />
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="field-group">
+                <label class="field-label">WEBSITE</label>
+                <input v-model="form.website" type="url" class="field-input" placeholder="e.g. https://company.com" required />
+              </div>
+            </div>
           </div>
           <div class="field-group">
             <label class="field-label">HR CONTACT</label>
             <input v-model="form.hr_contact" type="text" class="field-input" placeholder="Name or Email" required />
           </div>
+          <div class="field-group">
+            <label class="field-label">DESCRIPTION</label>
+            <textarea v-model="form.description" class="field-input" placeholder="Brief about company size, operations, etc..." rows="3" style="resize: none;" required></textarea>
+          </div>
+          <hr style="border-top: 1px solid var(--slate-200); margin: 1.5rem 0;" />
           <div class="field-group">
             <label class="field-label">USERNAME</label>
             <input v-model="form.username" type="text" class="field-input" required />
@@ -45,7 +76,7 @@
           <div v-if="error" class="error-alert">
             <i class="bi bi-exclamation-circle-fill me-2"></i>{{ error }}
           </div>
-          <button type="submit" class="btn-login" :disabled="loading" style="background:var(--slate-800); color:white;">
+          <button type="submit" class="btn-login" :disabled="loading" style="background:#0f172a; color:white;">
             <span v-if="loading">Registering...</span>
             <span v-else>Register Company</span>
           </button>
@@ -71,7 +102,17 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 const error = ref('')
 const loading = ref(false)
-const form = reactive({ name: '', industry: '', hr_contact: '', username: '', email: '', password: '' })
+const form = reactive({
+  name: '',
+  industry: '',
+  hr_contact: '',
+  location: '',
+  website: '',
+  description: '',
+  username: '',
+  email: '',
+  password: ''
+})
 
 const handleRegister = async () => {
   loading.value = true

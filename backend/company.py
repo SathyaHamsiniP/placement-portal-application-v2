@@ -19,6 +19,11 @@ def get_company_stats(current_user):
     job_ids = [j.id for j in company.job_positions]
     total_apps = Application.query.filter(Application.job_id.in_(job_ids)).count() if job_ids else 0
     shortlisted = Application.query.filter(Application.job_id.in_(job_ids), Application.status == 'Shortlisted').count() if job_ids else 0
+    in_review = Application.query.filter(Application.job_id.in_(job_ids), Application.status.in_(['Applied', 'Review Pending'])).count() if job_ids else 0
+    interviewed = Application.query.filter(Application.job_id.in_(job_ids), Application.status == 'Interviewed').count() if job_ids else 0
+    offered = Application.query.filter(Application.job_id.in_(job_ids), Application.status.in_(['Offered', 'Placed'])).count() if job_ids else 0
+    
+    placement_rate = int((offered / total_apps * 100)) if total_apps > 0 else 0
     
     stats = {
         'company_name': company.name,
@@ -26,12 +31,12 @@ def get_company_stats(current_user):
         'jobs_posted': len(company.job_positions),
         'active_applications': total_apps,
         'verified_jobs': len([j for j in company.job_positions if j.status == 'Approved']),
-        'placement_rate': 0, # Logic can be added later
+        'placement_rate': f"{placement_rate}%",
         'recruitment_status': {
-            'in_review': len([a for j in company.job_positions for a in j.applications if a.status == 'Applied']),
+            'in_review': in_review,
             'shortlisted': shortlisted,
-            'interviewed': 0,
-            'offered': len([a for j in company.job_positions for a in j.applications if a.status == 'Selected'])
+            'interviewed': interviewed,
+            'offered': offered
         }
     }
     return jsonify(stats)

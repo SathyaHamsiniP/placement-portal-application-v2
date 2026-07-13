@@ -73,7 +73,7 @@
                       <div class="extra-small text-muted mt-1 fw-bold"><i class="bi bi-clock me-1"></i>{{ event.date.toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) }}</div>
                     </div>
                     <div>
-                      <button v-if="event.type === 'deadline'" @click="activeTab = 'jobs'" class="btn btn-sm btn-dark extra-small px-3 rounded-3">Apply</button>
+                      <button v-if="event.type === 'deadline'" @click="applyForJob(event.jobId)" class="btn btn-sm btn-dark extra-small px-3 rounded-3">Quick Apply</button>
                       <span v-else class="badge bg-white text-dark border extra-small px-3 py-2"><i class="bi bi-check-circle-fill text-success me-1"></i> Scheduled</span>
                     </div>
                   </div>
@@ -154,7 +154,14 @@
                 </div>
                 <div class="col-md-6">
                   <label class="form-label fw-bold extra-small text-uppercase">Branch/Department</label>
-                  <input v-model="profileForm.branch" type="text" class="form-control rounded-3 border-light p-3 extra-small" required />
+                  <select v-model="profileForm.branch" class="form-control rounded-3 border-light p-3 extra-small" required>
+                    <option value="" disabled>Select Branch</option>
+                    <option value="Computer Science">Computer Science</option>
+                    <option value="Electrical Engineering">Electrical Engineering</option>
+                    <option value="Mechanical Engineering">Mechanical Engineering</option>
+                    <option value="Civil Engineering">Civil Engineering</option>
+                    <option value="Chemical Engineering">Chemical Engineering</option>
+                  </select>
                 </div>
                 <div class="col-md-6">
                   <label class="form-label fw-bold extra-small text-uppercase">CGPA (out of 10.0)</label>
@@ -280,7 +287,7 @@ watch(() => route.hash, (newHash) => {
     activeTab.value = tab
   }
 })
-const username = ref(localStorage.getItem('username'))
+const username = ref(sessionStorage.getItem('username'))
 const stats = ref({ applied: 0, shortlisted: 0, placed: 0, in_progress: 0 })
 const applications = ref([])
 const profile = ref({})
@@ -357,29 +364,32 @@ const upcomingAgenda = computed(() => {
     }
   })
 
-  // 2. Upcoming Deadlines for eligible, unapplied jobs
-  jobsData.value.forEach(job => {
-    if (job.deadline && !job.already_applied && job.cgpa_eligible) {
-      const d = new Date(job.deadline)
-      if (d >= now) {
-        events.push({
-          id: 'job_' + job.id,
-          type: 'deadline',
-          title: `Deadline: ${job.title} @ ${job.company_name}`,
-          date: d,
-          colorClass: 'bg-warning-soft text-warning border-warning',
-          icon: 'bi bi-hourglass-split'
-        })
+  // 2. Upcoming Deadlines for eligible, unapplied jobs (only if NOT placed)
+  if (!(stats.value.placed > 0)) {
+    jobsData.value.forEach(job => {
+      if (job.deadline && !job.already_applied && job.cgpa_eligible) {
+        const d = new Date(job.deadline)
+        if (d >= now) {
+          events.push({
+            id: 'job_' + job.id,
+            jobId: job.id,
+            type: 'deadline',
+            title: `Deadline: ${job.title} @ ${job.company_name}`,
+            date: d,
+            colorClass: 'bg-warning-soft text-warning border-warning',
+            icon: 'bi bi-hourglass-split'
+          })
+        }
       }
-    }
-  })
+    })
+  }
 
   // Sort chronologically and take next 5 items
   return events.sort((a, b) => a.date - b.date).slice(0, 5)
 })
 
 const fetchData = async () => {
-  const token = localStorage.getItem('token')
+  const token = sessionStorage.getItem('token')
   const headers = { Authorization: `Bearer ${token}` }
   try {
     const res = await axios.get('http://127.0.0.1:5000/api/student/dashboard', { headers })
@@ -412,14 +422,14 @@ watch(profile, (newProfile) => {
 const applyForJob = async (jobId) => {
   try {
     const res = await axios.post(`http://127.0.0.1:5000/api/student/apply/${jobId}`, {}, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` }
     })
     fetchData()
   } catch (err) { alert(err.response?.data?.message || 'Error applying') }
 }
 
 const handleUpdateProfile = async () => {
-  const token = localStorage.getItem('token')
+  const token = sessionStorage.getItem('token')
   const headers = { Authorization: `Bearer ${token}` }
   const skillsList = skillsInput.value.split(',').map(s => s.trim()).filter(Boolean)
   try {
@@ -441,7 +451,7 @@ const onFileChange = (e) => {
 
 const handleUploadResume = async () => {
   if (!selectedFile.value) return
-  const token = localStorage.getItem('token')
+  const token = sessionStorage.getItem('token')
   const formData = new FormData()
   formData.append('resume', selectedFile.value)
   try {
@@ -461,7 +471,7 @@ const handleUploadResume = async () => {
 }
 
 const downloadOfferLetter = async (app) => {
-  const token = localStorage.getItem('token')
+  const token = sessionStorage.getItem('token')
   try {
     const res = await axios.get(`http://127.0.0.1:5000/api/student/offer-letter/${app.id}`, {
       headers: { Authorization: `Bearer ${token}` }
@@ -487,7 +497,7 @@ const exportCSV = async () => {
   exportStatus.value = 'Starting export...'
   try {
     const res = await axios.post('http://127.0.0.1:5000/api/jobs/export/student', {}, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` }
     })
     const taskId = res.data.task_id
     exportStatus.value = 'Processing...'
@@ -502,7 +512,7 @@ const pollTask = (taskId) => {
   const interval = setInterval(async () => {
     try {
       const res = await axios.get(`http://127.0.0.1:5000/api/jobs/task/${taskId}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` }
       })
       if (res.data.status === 'SUCCESS') {
         clearInterval(interval)
@@ -512,7 +522,7 @@ const pollTask = (taskId) => {
         // Trigger download
         if (file) {
           const dl = await axios.get(`http://127.0.0.1:5000/api/jobs/exports/${file}`, {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+            headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` },
             responseType: 'blob'
           })
           const url = window.URL.createObjectURL(new Blob([dl.data]))
@@ -540,12 +550,12 @@ const filteredJobs = computed(() => {
 
 watch(activeTab, fetchData)
 onMounted(fetchData)
-const handleLogout = () => { localStorage.clear(); router.push('/login') }
+const handleLogout = () => { sessionStorage.clear(); router.push('/login') }
 </script>
 
 <style scoped>
 .app-container { display: flex; width: 100vw; min-height: 100vh; background-color: #f8fafc; overflow-x: hidden; }
-.main-workspace { flex: 1; margin-left: 240px; display: flex; flex-direction: column; width: calc(100vw - 240px); }
+.main-workspace { flex: 1; margin-left: 240px; display: flex; flex-direction: column; width: calc(100vw - 240px); transition: all 0.3s ease; }
 .top-navbar { height: 75px; z-index: 10; display: flex; align-items: center; }
 .portal-title-left { font-size: 0.8rem; font-weight: 800; text-transform: uppercase; color: #64748b; letter-spacing: 0.1rem; }
 
@@ -591,5 +601,5 @@ const handleLogout = () => { localStorage.clear(); router.push('/login') }
   z-index: 10; border-radius: inherit; color: #ef4444; 
 }
 
-@media (max-width: 1200px) { .main-workspace { margin-left: 0; width: 100vw; } }
+@media (max-width: 991px) { .main-workspace { margin-left: 80px; width: calc(100vw - 80px); } }
 </style>

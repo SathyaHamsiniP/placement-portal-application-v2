@@ -250,7 +250,7 @@ const adminMenu = [
 ]
 
 const refreshData = async () => {
-  const token = localStorage.getItem('token')
+  const token = sessionStorage.getItem('token')
   const headers = { Authorization: `Bearer ${token}` }
   try {
     if (activeTab.value === 'dashboard') {
@@ -279,29 +279,29 @@ const refreshData = async () => {
 }
 
 const toggleActive = async (userId) => {
-  await axios.post(`http://127.0.0.1:5000/api/admin/user/toggle-active/${userId}`, {}, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } })
+  await axios.post(`http://127.0.0.1:5000/api/admin/user/toggle-active/${userId}`, {}, { headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` } })
   refreshData()
 }
 
 const approveCompany = async (id) => {
-  await axios.post(`http://127.0.0.1:5000/api/admin/company/approve/${id}`, {}, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } })
+  await axios.post(`http://127.0.0.1:5000/api/admin/company/approve/${id}`, {}, { headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` } })
   refreshData()
 }
 
 const approveJob = async (id) => {
-  await axios.post(`http://127.0.0.1:5000/api/admin/job/approve/${id}`, {}, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } })
+  await axios.post(`http://127.0.0.1:5000/api/admin/job/approve/${id}`, {}, { headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` } })
   refreshData()
 }
 
 const deleteCompany = async (id) => {
   if (!confirm('Are you sure you want to completely delete this company?')) return
-  await axios.delete(`http://127.0.0.1:5000/api/admin/company/${id}`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } })
+  await axios.delete(`http://127.0.0.1:5000/api/admin/company/${id}`, { headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` } })
   refreshData()
 }
 
 const deleteStudent = async (id) => {
   if (!confirm('Are you sure you want to completely delete this student?')) return
-  await axios.delete(`http://127.0.0.1:5000/api/admin/student/${id}`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } })
+  await axios.delete(`http://127.0.0.1:5000/api/admin/student/${id}`, { headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` } })
   refreshData()
 }
 
@@ -328,12 +328,12 @@ const barChartOptions = { ...chartOptions, scales: { y: { grid: { color: '#f1f5f
 const doughnutChartOptions = { ...chartOptions, plugins: { legend: { display: true, position: 'bottom', labels: { usePointStyle: true, boxWidth: 10 } } }, cutout: '70%'}
 
 onMounted(refreshData)
-const handleLogout = () => { localStorage.clear(); router.push('/login') }
+const handleLogout = () => { sessionStorage.clear(); router.push('/login') }
 </script>
 
 <style scoped>
 .app-container { display: flex; width: 100vw; min-height: 100vh; background-color: #f8fafc; overflow-x: hidden; }
-.main-workspace { flex: 1; margin-left: 240px; display: flex; flex-direction: column; width: calc(100vw - 240px); }
+.main-workspace { flex: 1; margin-left: 240px; display: flex; flex-direction: column; width: calc(100vw - 240px); transition: all 0.3s ease; }
 .top-navbar { height: 75px; z-index: 10; display: flex; align-items: center; }
 .portal-title-left { font-size: 0.9rem; font-weight: 800; text-transform: uppercase; color: #334155; letter-spacing: 0.12rem; }
 .avatar-circle { width: 42px; height: 42px; background-color: #0f172a; color: white; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 800; }
@@ -350,5 +350,5 @@ const handleLogout = () => { localStorage.clear(); router.push('/login') }
 .table tr:hover { background-color: #fcfdfe; }
 .stat-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #94a3b8; letter-spacing: 0.05em; margin-top: 0.4rem; }
 .sync-tag { font-size: 0.7rem; color: #64748b; background: #f8fafc; padding: 0.4rem 0.8rem; border-radius: 8px; border: 1px solid #e2e8f0; font-weight: 600; }
-@media (max-width: 1200px) { .main-workspace { margin-left: 0; width: 100vw; } }
+@media (max-width: 991px) { .main-workspace { margin-left: 80px; width: calc(100vw - 80px); } }
 </style>

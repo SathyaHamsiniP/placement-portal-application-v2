@@ -77,9 +77,9 @@ const handleLogin = async () => {
       username: username.value,
       password: password.value
     })
-    localStorage.setItem('token', response.data.token)
-    localStorage.setItem('role', response.data.role)
-    localStorage.setItem('username', response.data.username)
+    sessionStorage.setItem('token', response.data.token)
+    sessionStorage.setItem('role', response.data.role)
+    sessionStorage.setItem('username', response.data.username)
 
     if (response.data.role === 'Admin') router.push('/admin')
     else if (response.data.role === 'Company') router.push('/company')

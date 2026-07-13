@@ -41,10 +41,22 @@ def register_student():
     db.session.add(new_user)
     db.session.flush() # Get user ID
     
+    skills_raw = data.get('skills', '')
+    if isinstance(skills_raw, list):
+        skills_list = skills_raw
+    else:
+        skills_list = [s.strip() for s in skills_raw.split(',') if s.strip()]
+
     student_profile = Student(
         user_id=new_user.id,
         full_name=data['full_name'],
-        roll_number=data['roll_number']
+        roll_number=data['roll_number'],
+        branch=data.get('branch'),
+        cgpa=float(data['cgpa']) if data.get('cgpa') else None,
+        grad_year=int(data['grad_year']) if data.get('grad_year') else None,
+        skills=skills_list,
+        education_details=data.get('education_details'),
+        experience=data.get('experience')
     )
     
     db.session.add(student_profile)
@@ -74,6 +86,9 @@ def register_company():
         name=data['name'],
         industry=data.get('industry', 'Technology'),
         hr_contact=data['hr_contact'],
+        location=data.get('location'),
+        website=data.get('website'),
+        description=data.get('description'),
         is_approved=False # Pending admin approval
     )
     

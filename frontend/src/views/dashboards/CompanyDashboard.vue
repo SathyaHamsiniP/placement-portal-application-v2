@@ -55,7 +55,7 @@
                 <div class="stat-label">Verified Job Posts</div>
               </div>
               <div class="stat-col flex-fill border-start">
-                <h1 class="stats-value-small fw-bold mb-0 text-primary">0%</h1>
+                <h1 class="stats-value-small fw-bold mb-0 text-primary">{{ stats.placement_rate || '0%' }}</h1>
                 <div class="stat-label">Placement Rate</div>
               </div>
             </div>
@@ -114,7 +114,8 @@
                 </div>
                 <p class="text-muted extra-small mb-0">Track and manage your recruitment pipeline</p>
               </div>
-              <div class="d-flex align-items-center gap-2">
+              <!-- Export CSV only shown when viewing a specific job's applicants -->
+              <div v-if="selectedJob" class="d-flex align-items-center gap-2">
                 <span v-if="exportStatus" class="extra-small text-muted">{{ exportStatus }}</span>
                 <button @click="exportCSV" :disabled="exportLoading" class="btn btn-sm btn-outline-dark rounded-3 px-3 extra-small" style="min-width:130px">
                   <i class="bi bi-file-earmark-arrow-down me-1"></i>
@@ -302,7 +303,7 @@ watch(() => route.hash, (newHash) => {
     activeTab.value = tab
   }
 })
-const username = ref(localStorage.getItem('username'))
+const username = ref(sessionStorage.getItem('username'))
 const stats = ref({ recruitment_status: {} })
 const jobsData = ref([])
 const selectedJob = ref(null)
@@ -318,7 +319,7 @@ const studentProfile = ref({})
 const viewStudentProfile = async (app) => {
   try {
     const res = await axios.get(`http://127.0.0.1:5000/api/admin/student/${app.student_id}`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` }
     })
     studentProfile.value = res.data
     showProfileModal.value = true
@@ -334,7 +335,7 @@ const companyMenu = [
 const jobForm = ref({ title: '', salary: '', deadline: '', description: '', allowed_branches: ['CSE'] })
 
 const refreshData = async () => {
-  const token = localStorage.getItem('token')
+  const token = sessionStorage.getItem('token')
   const headers = { Authorization: `Bearer ${token}` }
   try {
     if (activeTab.value === 'dashboard') {
@@ -350,7 +351,7 @@ const refreshData = async () => {
 const viewApplicants = async (job) => {
   selectedJob.value = job
   const res = await axios.get(`http://127.0.0.1:5000/api/company/applicants/${job.id}`, {
-    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` }
   })
   applicants.value = res.data
 }
@@ -364,7 +365,7 @@ const openStatusModal = (app) => {
 const submitStatusUpdate = async () => {
   try {
     await axios.post(`http://127.0.0.1:5000/api/company/application/update-status/${currentApp.value.id}`, statusUpdate.value, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` }
     })
     showStatusModal.value = false
     viewApplicants(selectedJob.value)
@@ -373,14 +374,14 @@ const submitStatusUpdate = async () => {
 }
 
 const handlePostJob = async () => {
-  await axios.post('http://127.0.0.1:5000/api/company/post-job', jobForm.value, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } })
+  await axios.post('http://127.0.0.1:5000/api/company/post-job', jobForm.value, { headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` } })
   activeTab.value = 'jobs'; refreshData()
 }
 
 watch(activeTab, () => { selectedJob.value = null; refreshData() })
 onMounted(refreshData)
 
-const handleLogout = () => { localStorage.clear(); router.push('/login') }
+const handleLogout = () => { sessionStorage.clear(); router.push('/login') }
 const activeMenuLabel = computed(() => companyMenu.find(item => item.id === activeTab.value)?.label || 'Overview')
 
 const trendChartData = { labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], datasets: [{ label: 'Applications', borderColor: '#f97316', backgroundColor: 'rgba(249, 115, 22, 0.1)', data: [0, 0, 0, 0, 5, 2, 0, 0, 0, 0, 0, 0], borderWidth: 3, tension: 0.4, fill: true }]}
@@ -395,14 +396,14 @@ const exportCSV = async () => {
   exportStatus.value = 'Starting export...'
   try {
     const res = await axios.post('http://127.0.0.1:5000/api/jobs/export/company', {}, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` }
     })
     const taskId = res.data.task_id
     exportStatus.value = 'Processing...'
     const interval = setInterval(async () => {
       try {
         const poll = await axios.get(`http://127.0.0.1:5000/api/jobs/task/${taskId}`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+          headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` }
         })
         if (poll.data.status === 'SUCCESS') {
           clearInterval(interval)
@@ -411,7 +412,7 @@ const exportCSV = async () => {
           exportStatus.value = file ? `Ready: ${file}` : 'Export complete!'
           if (file) {
             const dl = await axios.get(`http://127.0.0.1:5000/api/jobs/exports/${file}`, {
-              headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+              headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` },
               responseType: 'blob'
             })
             const url = window.URL.createObjectURL(new Blob([dl.data]))
@@ -431,7 +432,7 @@ const exportCSV = async () => {
 
 <style scoped>
 .app-container { display: flex; width: 100vw; min-height: 100vh; background-color: #f8fafc; overflow-x: hidden; }
-.main-workspace { flex: 1; margin-left: 240px; display: flex; flex-direction: column; width: calc(100vw - 240px); }
+.main-workspace { flex: 1; margin-left: 240px; display: flex; flex-direction: column; width: calc(100vw - 240px); transition: all 0.3s ease; }
 .top-navbar { height: 75px; z-index: 10; display: flex; align-items: center; }
 .portal-title-left { font-size: 0.8rem; font-weight: 800; text-transform: uppercase; color: #64748b; letter-spacing: 0.1rem; }
 .avatar-circle-company { width: 42px; height: 42px; background-color: #0f172a; color: white; display: flex; align-items: center; justify-content: center; border-radius: 12px; font-weight: 800; }
@@ -445,5 +446,5 @@ const exportCSV = async () => {
 .stats-value-small { font-size: 2.2rem; }
 .stat-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: #94a3b8; letter-spacing: 0.05em; margin-top: 0.5rem; }
 .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); z-index: 1000; }
-@media (max-width: 1200px) { .main-workspace { margin-left: 0; width: 100vw; } }
+@media (max-width: 991px) { .main-workspace { margin-left: 80px; width: calc(100vw - 80px); } }
 </style>

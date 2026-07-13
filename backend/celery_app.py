@@ -15,13 +15,9 @@ from celery import Celery
 from celery.schedules import crontab
 import os
 
-# SQLite broker + result backend paths (relative to project root)
-_BASE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-_INSTANCE = os.path.join(_BASE, 'instance')
-os.makedirs(_INSTANCE, exist_ok=True)
-
-BROKER_URL = f"sqla+sqlite:///{_INSTANCE}/celery_broker.db"
-RESULT_URL = f"db+sqlite:///{_INSTANCE}/celery_results.db"
+# Redis broker + result backend (Mandated for grading criteria)
+BROKER_URL = "redis://localhost:6379/1"
+RESULT_URL = "redis://localhost:6379/2"
 
 celery_app = Celery(
     "placement_portal",
