@@ -56,3 +56,11 @@ desktop.ini
 
 # Celery
 celerybeat-schedule
+celerybeat-schedule.db
+celerybeat-schedule.bak
+celerybeat-schedule.dir
+celerybeat-schedule.dat
+
+# App generated reports & exports
+instance/exports/
+instance/reports/
