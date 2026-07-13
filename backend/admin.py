@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify, request
 from .database import db
 from .models import User, Company, Student, JobPosition, Application
 from .auth import token_required
+from .cache import cache_response, invalidate_cache
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -27,6 +28,7 @@ def get_stats(current_user):
 
 @admin_bp.route('/companies', methods=['GET'])
 @token_required
+@cache_response(timeout=300, key_prefix="admin_companies")
 def get_companies(current_user):
     if current_user.role != 'Admin':
         return jsonify({'message': 'Unauthorized'}), 403
@@ -55,6 +57,9 @@ def approve_company(current_user, company_id):
     company = Company.query.get_or_404(company_id)
     company.is_approved = True
     db.session.commit()
+    # Invalidate cache since company approval state changed
+    invalidate_cache("admin_companies:*")
+    invalidate_cache("jobs_cache:*")
     return jsonify({'message': 'Company approved successfully'})
 
 @admin_bp.route('/jobs', methods=['GET'])
@@ -86,10 +91,13 @@ def approve_job(current_user, job_id):
     job = JobPosition.query.get_or_404(job_id)
     job.status = 'Approved'
     db.session.commit()
+    # Invalidate cached jobs list
+    invalidate_cache("jobs_cache:*")
     return jsonify({'message': 'Job posting approved'})
 
 @admin_bp.route('/students', methods=['GET'])
 @token_required
+@cache_response(timeout=300, key_prefix="admin_students")
 def get_students(current_user):
     if current_user.role != 'Admin':
         return jsonify({'message': 'Unauthorized'}), 403
@@ -118,6 +126,10 @@ def toggle_user_active(current_user, user_id):
     user = User.query.get_or_404(user_id)
     user.is_active = not user.is_active
     db.session.commit()
+    # Invalidate both admin listing caches
+    invalidate_cache("admin_companies:*")
+    invalidate_cache("admin_students:*")
+    invalidate_cache("jobs_cache:*")
     return jsonify({'message': f'User {"activated" if user.is_active else "deactivated"} successfully'})
 
 @admin_bp.route('/company/<int:company_id>', methods=['DELETE'])
@@ -131,6 +143,9 @@ def delete_company(current_user, company_id):
     db.session.delete(company)
     db.session.delete(user)
     db.session.commit()
+    # Invalidate because company deleted
+    invalidate_cache("admin_companies:*")
+    invalidate_cache("jobs_cache:*")
     return jsonify({'message': 'Company removed successfully'})
 
 @admin_bp.route('/student/<int:student_id>', methods=['DELETE'])
@@ -144,6 +159,9 @@ def delete_student(current_user, student_id):
     db.session.delete(student)
     db.session.delete(user)
     db.session.commit()
+    # Invalidate because student deleted
+    invalidate_cache("admin_students:*")
+    invalidate_cache("jobs_cache:*")
     return jsonify({'message': 'Student removed successfully'})
 @admin_bp.route('/applications', methods=['GET'])
 @token_required

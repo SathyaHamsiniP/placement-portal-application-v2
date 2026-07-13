@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify, request, send_file
 from .database import db
 from .models import User, Company, Student, JobPosition, Application, Notification
 from .auth import token_required
+from .cache import cache_response, invalidate_cache
 from datetime import datetime
 import os
 
@@ -58,6 +59,7 @@ def get_student_dashboard(current_user):
 
 @student_bp.route('/jobs', methods=['GET'])
 @token_required
+@cache_response(timeout=300, key_prefix="jobs_cache")
 def get_jobs(current_user):
     if current_user.role != 'Student':
         return jsonify({'message': 'Unauthorized'}), 403
@@ -118,6 +120,8 @@ def apply_job(current_user, job_id):
     new_app = Application(student_id=student.id, job_id=job_id, status='Applied')
     db.session.add(new_app)
     db.session.commit()
+    # Invalidate cached job listings because the apply state of this user changes
+    invalidate_cache("jobs_cache:*")
     return jsonify({'message': 'Application submitted successfully'})
 
 @student_bp.route('/profile', methods=['POST'])
@@ -138,6 +142,9 @@ def update_profile(current_user):
     student.resume_url = data.get('resume_url', student.resume_url)
     
     db.session.commit()
+    # Invalidate student list cache for administrators, and job eligibility listings for this student
+    invalidate_cache("admin_students:*")
+    invalidate_cache("jobs_cache:*")
     return jsonify({'message': 'Profile updated successfully'})
 
 

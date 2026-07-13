@@ -5,6 +5,7 @@ from flask import Blueprint, request, jsonify, current_app
 from werkzeug.security import generate_password_hash, check_password_hash
 from .database import db
 from .models import User, Student, Company
+from .cache import invalidate_cache
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -61,6 +62,8 @@ def register_student():
     
     db.session.add(student_profile)
     db.session.commit()
+    # Invalidate student list cache for Admin
+    invalidate_cache("admin_students:*")
     
     return jsonify({'message': 'Student registered successfully'}), 201
 
@@ -94,6 +97,8 @@ def register_company():
     
     db.session.add(company_profile)
     db.session.commit()
+    # Invalidate company listing cache for Admin
+    invalidate_cache("admin_companies:*")
     
     return jsonify({'message': 'Company registered successfully. Pending Admin approval.'}), 201
 

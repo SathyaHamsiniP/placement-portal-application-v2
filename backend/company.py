@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify, request
 from .database import db
 from .models import User, Company, Student, JobPosition, Application, Notification
 from .auth import token_required
+from .cache import invalidate_cache
 from datetime import datetime
 
 company_bp = Blueprint('company', __name__)
@@ -83,6 +84,8 @@ def post_job(current_user):
     )
     db.session.add(new_job)
     db.session.commit()
+    # Invalidate cache since a new job was pending/posted
+    invalidate_cache("jobs_cache:*")
     return jsonify({'message': 'Job posted successfully and pending Admin approval'})
 
 @company_bp.route('/applicants/<int:job_id>', methods=['GET'])
