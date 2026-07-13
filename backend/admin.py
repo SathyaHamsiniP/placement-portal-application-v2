@@ -191,6 +191,19 @@ def get_student_profile(current_user, student_id):
         return jsonify({'message': 'Unauthorized'}), 403
 
     student = Student.query.get_or_404(student_id)
+    
+    if current_user.role == 'Company':
+        # Check if student is placed at any company
+        other_placed = Application.query.filter(
+            Application.student_id == student_id,
+            Application.status == 'Placed'
+        ).first()
+        if other_placed:
+            company_profile = current_user.company_profile
+            placed_job = JobPosition.query.get(other_placed.job_id)
+            if not company_profile or not placed_job or placed_job.company_id != company_profile.id:
+                return jsonify({'message': 'Access restricted: Student is already placed at another company.'}), 403
+
     user = User.query.get(student.user_id)
 
     apps = Application.query.filter_by(student_id=student.id).all()

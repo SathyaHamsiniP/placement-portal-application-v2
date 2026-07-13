@@ -101,6 +101,16 @@ def get_applicants(current_user, job_id):
     apps = Application.query.filter_by(job_id=job_id).all()
     output = []
     for app in apps:
+        # If student has a Placed application, and it is NOT for this company, reject visibility
+        other_placed = Application.query.filter(
+            Application.student_id == app.student_id,
+            Application.status == 'Placed',
+            Application.job_id != job_id
+        ).first()
+        if other_placed:
+            # Skip this application entirely: student has been placed at another company
+            continue
+
         student = Student.query.get(app.student_id)
         output.append({
             'id': app.id,
