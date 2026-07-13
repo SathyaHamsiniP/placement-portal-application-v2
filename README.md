@@ -1,4 +1,4 @@
-# Placement Portal Application (PPA) V2
+# Campus Placement Portal
 
 A comprehensive campus recruitment management system designed to streamline the interaction between **Educational Institutes (Admin)**, **Recruiting Companies**, and **Students**.
 
@@ -41,28 +41,27 @@ A comprehensive campus recruitment management system designed to streamline the 
 Ensure you have the following installed:
 *   Python 3.9+
 *   Node.js & npm
-*   Redis Server
+*   Redis Server (see running Redis instructions below)
 
 ### 2. Backend Setup
+From the project root directory:
 ```bash
-# Clone the repository
-cd backend
-
 # Create and activate virtual environment
 python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+venv\Scripts\activate  # On macOS/Linux: source venv/bin/activate
 
 # Install dependencies
-pip install -r requirements.txt
+pip install -r backend/requirements.txt
 
 # Initialize database (Creates schemas and Admin user)
-python init_db.py
+python -m backend.init_db
 
 # Run the development server
-python main.py
+python -m backend.main
 ```
 
 ### 3. Frontend Setup
+From the `frontend` folder:
 ```bash
 cd frontend
 
@@ -74,13 +73,28 @@ npm run dev
 ```
 
 ### 4. Background Tasks (Celery)
-In two separate terminals:
+In two separate terminals, run these commands from the project root directory (make sure your virtual environment is active):
 ```bash
-# Start Celery Worker
-celery -A main.celery worker --loglevel=info
+# Start Celery Worker (solo pool is required on native Windows)
+celery -A backend.celery_app:celery_app worker --loglevel=info --pool=solo
 
 # Start Celery Beat (for scheduled jobs)
-celery -A main.celery beat --loglevel=info
+celery -A backend.celery_app:celery_app beat --loglevel=info
+```
+
+---
+
+## Running Redis Server
+
+### Windows Native Setup:
+Download and run the Redis server installer/portable zip for Windows and verify it runs on default port `6379`.
+
+### WSL Setup (Recommended):
+If you are using Windows Subsystem for Linux (WSL), install and run Redis Server with:
+```bash
+sudo apt update
+sudo apt install redis-server
+sudo service redis-server start
 ```
 
 ---
@@ -97,4 +111,3 @@ celery -A main.celery beat --loglevel=info
 
 ---
 
-© 2026 Institute Recruitment Cell. Built for excellence.

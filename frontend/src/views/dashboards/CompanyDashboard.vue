@@ -178,6 +178,32 @@
                     <input v-model="jobForm.salary" type="text" class="form-control rounded-3 border-light p-3" placeholder="e.g. 10 LPA" required></div>
                   <div class="col-md-6"><label class="form-label fw-bold small">Deadline</label>
                     <input v-model="jobForm.deadline" type="date" class="form-control rounded-3 border-light p-3" required></div>
+                  <div class="col-md-6"><label class="form-label fw-bold small">Minimum CGPA Required</label>
+                    <input v-model="jobForm.min_cgpa" type="number" step="0.01" min="0" max="10" class="form-control rounded-3 border-light p-3" placeholder="e.g. 7.5" required></div>
+                  <div class="col-md-6"><label class="form-label fw-bold small mb-2 d-block">Allowed Branches</label>
+                    <div class="d-flex flex-column gap-2 p-3 bg-light rounded-3 border border-light-subtle">
+                      <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="Computer Science" id="branchCSE" v-model="jobForm.allowed_branches">
+                        <label class="form-check-label small" for="branchCSE">Computer Science</label>
+                      </div>
+                      <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="Electrical Engineering" id="branchECE" v-model="jobForm.allowed_branches">
+                        <label class="form-check-label small" for="branchECE">Electrical Engineering</label>
+                      </div>
+                      <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="Mechanical Engineering" id="branchMECH" v-model="jobForm.allowed_branches">
+                        <label class="form-check-label small" for="branchMECH">Mechanical Engineering</label>
+                      </div>
+                      <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="Civil Engineering" id="branchCIVIL" v-model="jobForm.allowed_branches">
+                        <label class="form-check-label small" for="branchCIVIL">Civil Engineering</label>
+                      </div>
+                      <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="Chemical Engineering" id="branchCHEM" v-model="jobForm.allowed_branches">
+                        <label class="form-check-label small" for="branchCHEM">Chemical Engineering</label>
+                      </div>
+                    </div>
+                  </div>
                   <div class="col-md-12"><label class="form-label fw-bold small">Description</label>
                     <textarea v-model="jobForm.description" class="form-control rounded-3 border-light p-3" rows="4" required></textarea></div>
                   <div class="col-12 text-center mt-4">
@@ -332,7 +358,7 @@ const companyMenu = [
   { id: 'jobs', label: 'Manage Jobs', icon: 'bi-list-ul' }
 ]
 
-const jobForm = ref({ title: '', salary: '', deadline: '', description: '', allowed_branches: ['CSE'] })
+const jobForm = ref({ title: '', salary: '', deadline: '', description: '', min_cgpa: 0, allowed_branches: [] })
 
 const refreshData = async () => {
   const token = sessionStorage.getItem('token')
@@ -374,8 +400,18 @@ const submitStatusUpdate = async () => {
 }
 
 const handlePostJob = async () => {
-  await axios.post('http://127.0.0.1:5000/api/company/post-job', jobForm.value, { headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` } })
-  activeTab.value = 'jobs'; refreshData()
+  if (!jobForm.value.allowed_branches || jobForm.value.allowed_branches.length === 0) {
+    alert('Please select at least one branch in Allowed Branches.')
+    return
+  }
+  try {
+    await axios.post('http://127.0.0.1:5000/api/company/post-job', jobForm.value, { headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` } })
+    jobForm.value = { title: '', salary: '', deadline: '', description: '', min_cgpa: 0, allowed_branches: [] }
+    activeTab.value = 'jobs'
+    refreshData()
+  } catch (err) {
+    alert(err.response?.data?.message || 'Error posting job')
+  }
 }
 
 watch(activeTab, () => { selectedJob.value = null; refreshData() })
