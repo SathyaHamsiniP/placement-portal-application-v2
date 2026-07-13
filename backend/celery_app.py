@@ -40,10 +40,20 @@ celery_app.conf.update(
             "task": "backend.tasks.send_interview_reminders",
             "schedule": crontab(hour=8, minute=0),
         },
-        # Monthly placement report: 1st of each month at 7:00 AM IST
+        # Deadline reminders: every day at 9:00 AM IST
+        "daily-deadline-reminders": {
+            "task": "backend.tasks.send_deadline_reminders",
+            "schedule": crontab(hour=9, minute=0),
+        },
+        # Monthly admin placement report: 1st of each month at 7:00 AM IST
         "monthly-placement-report": {
             "task": "backend.tasks.generate_monthly_placement_report",
             "schedule": crontab(hour=7, minute=0, day_of_month=1),
+        },
+        # Monthly per-company report: 1st of each month at 7:30 AM IST
+        "monthly-company-report": {
+            "task": "backend.tasks.generate_monthly_company_report",
+            "schedule": crontab(hour=7, minute=30, day_of_month=1),
         },
     },
 )
