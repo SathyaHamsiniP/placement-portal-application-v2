@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request, send_file
-from .database import db
+from .database import db, auto_update_passed_interviews
 from .models import User, Company, Student, JobPosition, Application, Notification
 from .auth import token_required
 from .cache import cache_response, invalidate_cache
@@ -14,6 +14,7 @@ def get_student_dashboard(current_user):
     if current_user.role != 'Student':
         return jsonify({'message': 'Unauthorized'}), 403
     
+    auto_update_passed_interviews()
     student = current_user.student_profile
     apps = Application.query.filter_by(student_id=student.id).all()
     

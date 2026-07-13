@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from .database import db
+from .database import db, auto_update_passed_interviews
 from .models import User, Company, Student, JobPosition, Application, Notification
 from .auth import token_required
 from .cache import invalidate_cache
@@ -12,6 +12,8 @@ company_bp = Blueprint('company', __name__)
 def get_company_stats(current_user):
     if current_user.role != 'Company':
         return jsonify({'message': 'Unauthorized'}), 403
+    
+    auto_update_passed_interviews()
     
     company = current_user.company_profile
     if not company:
@@ -98,6 +100,7 @@ def get_applicants(current_user, job_id):
     if job.company_id != current_user.company_profile.id:
         return jsonify({'message': 'Unauthorized'}), 403
         
+    auto_update_passed_interviews()
     apps = Application.query.filter_by(job_id=job_id).all()
     output = []
     for app in apps:
@@ -149,11 +152,36 @@ def update_app_status(current_user, app_id):
     app.status = new_status
     app.feedback = feedback
     
-    if interview_date_str:
-        try:
-            app.interview_date = datetime.fromisoformat(interview_date_str.replace('Z', ''))
-        except (ValueError, TypeError):
-            pass
+    if new_status == 'Shortlisted':
+        if interview_date_str:
+            try:
+                app.interview_date = datetime.fromisoformat(interview_date_str.replace('Z', ''))
+            except (ValueError, TypeError):
+                pass
+        
+        # Send immediate email notification to student if SMTP is active
+        from flask import current_app
+        from .tasks import _mail_ready
+        if _mail_ready(current_app):
+            try:
+                from flask_mail import Message
+                from .database import mail
+                if app.student.user and app.student.user.email:
+                    formatted_dt = app.interview_date.strftime('%d %b %Y, %I:%M %p') if app.interview_date else "TBD"
+                    email_msg = Message(
+                        subject=f"Interview Scheduled: {app.job_position.title}",
+                        recipients=[app.student.user.email],
+                        body=(
+                            f"Hello {app.student.full_name},\n\n"
+                            f"An interview for the position '{app.job_position.title}' at {app.job_position.company.name} has been scheduled.\n"
+                            f"Date & Time: {formatted_dt}\n"
+                            f"Corporate Feedback / Message: {feedback}\n\n"
+                            "Best regards,\nPlacement Portal Team"
+                        )
+                    )
+                    mail.send(email_msg)
+            except Exception as e:
+                current_app.logger.error(f"Failed to email interview schedule: {e}")
             
     if new_status == 'Placed':
         from .models import Placement

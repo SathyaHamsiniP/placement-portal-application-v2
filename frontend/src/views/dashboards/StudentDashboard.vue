@@ -65,12 +65,9 @@
                 
                 <div v-if="upcomingAgenda.length > 0" class="agenda-list">
                   <div v-for="event in upcomingAgenda" :key="event.id" class="d-flex align-items-center mb-3 p-3 border border-light-subtle rounded-4 gap-3 bg-light-hover transition-all">
-                    <div :class="['p-3 rounded-4 d-flex align-items-center justify-content-center border', event.colorClass]" style="width: 55px; height: 55px;">
-                      <i :class="event.icon + ' fs-4'"></i>
-                    </div>
                     <div class="flex-fill">
                       <div class="fw-bold text-dark">{{ event.title }}</div>
-                      <div class="extra-small text-muted mt-1 fw-bold"><i class="bi bi-clock me-1"></i>{{ event.date.toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) }}</div>
+                      <div class="extra-small text-muted mt-1 fw-bold">{{ event.date.toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) }}</div>
                     </div>
                     <div>
                       <button v-if="event.type === 'deadline'" @click="applyForJob(event.jobId)" class="btn btn-sm btn-dark extra-small px-3 rounded-3">Quick Apply</button>

@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from .database import db
+from .database import db, auto_update_passed_interviews
 from .models import User, Company, Student, JobPosition, Application
 from .auth import token_required
 from .cache import cache_response, invalidate_cache
@@ -11,6 +11,8 @@ admin_bp = Blueprint('admin', __name__)
 def get_stats(current_user):
     if current_user.role != 'Admin':
         return jsonify({'message': 'Unauthorized'}), 403
+    
+    auto_update_passed_interviews()
         
     placed = Application.query.filter_by(status='Placed').count()
     total_students = Student.query.count()
@@ -169,6 +171,7 @@ def get_applications(current_user):
     if current_user.role != 'Admin':
         return jsonify({'message': 'Unauthorized'}), 403
     
+    auto_update_passed_interviews()
     apps = Application.query.all()
     output = []
     for app in apps:

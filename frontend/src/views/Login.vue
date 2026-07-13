@@ -37,7 +37,7 @@
           </div>
 
           <button type="submit" class="btn-login" :disabled="loading">
-            <span v-if="loading"><i class="bi bi-hourglass-split me-2"></i>Signing in...</span>
+            <span v-if="loading">Signing in...</span>
             <span v-else>Sign In</span>
           </button>
         </form>

@@ -208,7 +208,7 @@
           <label class="small fw-bold mb-2 d-block">Corporate Feedback</label>
           <textarea v-model="statusUpdate.feedback" class="form-control mb-4 p-3 rounded-3 border-light" rows="3" placeholder="Provide feedback for the student..."></textarea>
           
-          <div v-if="statusUpdate.status === 'Interviewed'" class="mb-4 text-start">
+          <div v-if="statusUpdate.status === 'Shortlisted'" class="mb-4 text-start">
             <label class="small fw-bold mb-2 d-block">Interview Date & Time</label>
             <input v-model="statusUpdate.interview_date" type="datetime-local" class="form-control p-3 rounded-3 border-light" required />
           </div>
