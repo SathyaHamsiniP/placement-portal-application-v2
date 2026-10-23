@@ -32,7 +32,7 @@ EXPORTS_DIR = os.path.join(_BASE, "instance", "exports")
 REPORTS_DIR = os.path.join(_BASE, "instance", "reports")
 
 
-# ── Student: trigger CSV export ────────────────────────────────────────────────
+# Student: trigger CSV export
 
 @jobs_bp.route("/export/student", methods=["POST"])
 @token_required
@@ -51,7 +51,7 @@ def trigger_student_export(current_user):
     }), 202
 
 
-# ── Company: trigger CSV export ────────────────────────────────────────────────
+# Company: trigger CSV export
 
 @jobs_bp.route("/export/company", methods=["POST"])
 @token_required
@@ -70,7 +70,7 @@ def trigger_company_export(current_user):
     }), 202
 
 
-# ── Poll task status ───────────────────────────────────────────────────────────
+# Poll task status
 
 @jobs_bp.route("/task/<task_id>", methods=["GET"])
 @token_required
@@ -87,7 +87,7 @@ def get_task_status(current_user, task_id):
     return jsonify(response)
 
 
-# ── Admin: manually trigger reminders ─────────────────────────────────────────
+# Admin: manually trigger reminders
 
 @jobs_bp.route("/trigger/reminders", methods=["POST"])
 @token_required
@@ -98,7 +98,7 @@ def trigger_reminders(current_user):
     return jsonify({"message": "Interview reminder job queued.", "task_id": task.id}), 202
 
 
-# ── Admin: manually trigger monthly report ────────────────────────────────────
+# Admin: manually trigger monthly report
 
 @jobs_bp.route("/trigger/monthly-report", methods=["POST"])
 @token_required
@@ -109,7 +109,7 @@ def trigger_monthly_report(current_user):
     return jsonify({"message": "Monthly placement report job queued.", "task_id": task.id}), 202
 
 
-# ── Admin: list generated reports ─────────────────────────────────────────────
+# Admin: list generated reports
 
 @jobs_bp.route("/reports", methods=["GET"])
 @token_required
@@ -124,7 +124,7 @@ def list_reports(current_user):
     return jsonify(files)
 
 
-# ── Admin: download a specific report ─────────────────────────────────────────
+# Admin: download a specific report
 
 @jobs_bp.route("/reports/<filename>", methods=["GET"])
 @token_required
@@ -134,7 +134,7 @@ def download_report(current_user, filename):
     return send_from_directory(REPORTS_DIR, filename)
 
 
-# ── Student / Company: download their CSV export ──────────────────────────────
+# Student / Company: download their CSV export
 
 @jobs_bp.route("/exports/<filename>", methods=["GET"])
 @token_required

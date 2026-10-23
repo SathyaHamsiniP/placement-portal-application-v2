@@ -15,6 +15,7 @@
         </div>
       </div>
     </div>
+    
 
     <!-- Right login form panel -->
     <div class="form-panel">
@@ -29,7 +30,7 @@
           </div>
           <div class="field-group">
             <label class="field-label">PASSWORD</label>
-            <input v-model="password" type="password" class="field-input" placeholder="Enter your password" required />
+            <input v-model="password" type="password" minlength="6" class="field-input" placeholder="Enter your password" required />
           </div>
 
           <div v-if="error" class="error-alert">
@@ -302,9 +303,9 @@ const handleLogin = async () => {
 }
 
 @media (max-width: 768px) {
-  .login-page { flex-direction: column; }
+  .login-page { flex-direction: column; justify-content: center; align-items: center; }
   .brand-panel { width: 100%; padding: 40px 32px; }
   .brand-title { font-size: 30px; }
-  .form-panel { padding: 40px 24px; }
+  .form-panel { padding: 40px 24px; justify-content: center; align-items: center; background-color: #f97316; }
 }
 </style>

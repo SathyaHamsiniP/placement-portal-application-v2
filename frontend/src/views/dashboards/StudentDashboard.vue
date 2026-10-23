@@ -101,6 +101,20 @@
               <input type="text" v-model="searchQuery" class="form-control ps-5 rounded-3 border-light-subtle extra-small py-3" placeholder="Search by position, company, or required skills...">
             </div>
             
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>COmpany</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for='job in filteredJobs' :key="job.id">
+                  <td>{{ job.title }}</td>
+                  <td>{{ job.company_name}}</td>
+                </tr>
+              </tbody>
+            </table>
             <div class="row g-4">
               <div v-for="job in filteredJobs" :key="job.id" class="col-md-6 col-xl-4">
                 <div class="job-card-v2 p-4 border rounded-4 h-100 position-relative transition-all d-flex flex-column border-s-orange-thin" :class="!job.cgpa_eligible ? 'cgpa-restricted' : ''">

@@ -75,7 +75,7 @@
           </div>
           <div class="field-group">
             <label class="field-label">PASSWORD</label>
-            <input v-model="form.password" type="password" class="field-input" required />
+            <input v-model="form.password" type="password" minlength="6" class="field-input" required />
           </div>
 
           <div v-if="error" class="error-alert">

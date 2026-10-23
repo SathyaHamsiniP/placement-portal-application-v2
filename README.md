@@ -44,7 +44,9 @@ Ensure you have the following installed:
 *   Redis Server (see running Redis instructions below)
 
 ### 2. Backend Setup
-From the project root directory:
+From the project root directory, choose the method matching your terminal type:
+
+#### Option A: Command Prompt (CMD) or Git Bash / macOS / Linux
 ```bash
 # Create and activate virtual environment
 python -m venv venv
@@ -56,8 +58,29 @@ pip install -r backend/requirements.txt
 # Initialize database (Creates schemas and Admin user)
 python -m backend.init_db
 
+# (Optional) Seed the database with dummy test data
+python -m backend.seed
+
 # Run the development server
 python -m backend.main
+```
+
+#### Option B: Windows PowerShell (Recommended if Option A has permission/restricted script errors)
+```powershell
+# Create virtual environment
+python -m venv venv
+
+# Install dependencies using the venv pip directly
+.\venv\Scripts\pip install -r backend/requirements.txt
+
+# Initialize database using the venv python directly
+.\venv\Scripts\python -m backend.init_db
+
+# (Optional) Seed the database with dummy test data
+.\venv\Scripts\python -m backend.seed
+
+# Run the development server
+.\venv\Scripts\python -m backend.main
 ```
 
 ### 3. Frontend Setup
@@ -73,13 +96,24 @@ npm run dev
 ```
 
 ### 4. Background Tasks (Celery)
-In two separate terminals, run these commands from the project root directory (make sure your virtual environment is active):
+In two separate terminals, run these commands from the project root directory:
+
+#### Option A: Command Prompt (CMD) or Git Bash / macOS / Linux (venv activated)
 ```bash
 # Start Celery Worker (solo pool is required on native Windows)
 celery -A backend.celery_app:celery_app worker --loglevel=info --pool=solo
 
 # Start Celery Beat (for scheduled jobs)
 celery -A backend.celery_app:celery_app beat --loglevel=info
+```
+
+#### Option B: Windows PowerShell (Forces use of venv without script approval issues)
+```powershell
+# Start Celery Worker
+.\venv\Scripts\celery -A backend.celery_app:celery_app worker --loglevel=info --pool=solo
+
+# Start Celery Beat
+.\venv\Scripts\celery -A backend.celery_app:celery_app beat --loglevel=info
 ```
 
 ---

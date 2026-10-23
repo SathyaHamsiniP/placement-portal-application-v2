@@ -45,7 +45,8 @@ defineEmits(['update:activeTab', 'logout'])
   background-color: #0f172a;
   height: 100vh;
   position: fixed;
-  left: 0;
+  right: 0;
+  left: auto;
   top: 0;
   z-index: 1000;
   font-family: 'Inter', sans-serif;

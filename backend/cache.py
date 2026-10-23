@@ -3,7 +3,7 @@ import redis
 from functools import wraps
 from flask import request, jsonify
 
-# Connect to Redis DB 3 for caching (segragated from Celery's DB 1 and 2)
+# Connect to Redis DB 3 for caching 
 redis_client = redis.Redis(host='localhost', port=6379, db=3, decode_responses=True)
 
 def cache_response(timeout=300, key_prefix="api_cache"):

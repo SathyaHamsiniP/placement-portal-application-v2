@@ -108,12 +108,12 @@ def apply_job(current_user, job_id):
     if Application.query.filter_by(student_id=student.id, status='Placed').first():
         return jsonify({'message': 'You are already placed and cannot submit new applications.'}), 403
         
-    # Rule 3: CGPA Hard Filter (Backend Enforcement)
+    # Rule 3: CGPA Filter (Backend Enforcement)
     job = JobPosition.query.get_or_404(job_id)
     if (student.cgpa or 0) < (job.min_cgpa or 0):
         return jsonify({'message': 'You do not meet the minimum CGPA requirement for this role.'}), 403
 
-    # Rule 5: Duplicate Guard
+    # Rule 5: Duplicate Prevention
     existing = Application.query.filter_by(student_id=student.id, job_id=job_id).first()
     if existing:
         return jsonify({'message': 'Duplicate application detected.'}), 400

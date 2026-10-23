@@ -32,6 +32,8 @@ def register_student():
     if User.query.filter_by(username=data['username']).first() or User.query.filter_by(email=data['email']).first():
         return jsonify({'message': 'Username or Email already exists'}), 400
     
+    if len(data['password']) < 6 or '@' not in data['email']:
+        return jsonify({'message': 'Invalid email or password format'}), 400
     new_user = User(
         username=data['username'],
         email=data['email'],

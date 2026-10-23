@@ -1,12 +1,12 @@
 """
-tasks.py  –  All Celery background tasks
+tasks.py - All Celery background tasks
 
-  1. send_interview_reminders       – Daily 8 AM: email students with interviews in 24 h
-  2. send_deadline_reminders        – Daily 9 AM: email students about deadlines in 48 h
-  3. generate_monthly_placement_report – 1st of month 7 AM: HTML report emailed to admin
-  4. generate_monthly_company_report   – 1st of month 7:30 AM: per-company HTML report
-  5. export_student_csv             – User-triggered async CSV + email alert
-  6. export_company_csv             – User-triggered async CSV + email alert
+  1. send_interview_reminders        - Daily 8 AM: email students with interviews in 24 h
+  2. send_deadline_reminders         - Daily 9 AM: email students about deadlines in 48 h
+  3. generate_monthly_placement_report - 1st of month 7 AM: HTML report emailed to admin
+  4. generate_monthly_company_report   - 1st of month 7:30 AM: per-company HTML report
+  5. export_student_csv              - User-triggered async CSV + email alert
+  6. export_company_csv              - User-triggered async CSV + email alert
 """
 
 from __future__ import annotations
@@ -21,7 +21,7 @@ from .celery_app import celery_app
 
 log = logging.getLogger(__name__)
 
-# ── Helpers ────────────────────────────────────────────────────────────────────
+# Helpers
 
 def _get_app():
     """Import create_app lazily to avoid circular imports."""
@@ -54,7 +54,7 @@ def _mail_ready(app) -> bool:
     return True
 
 
-# ── Task 1: Interview Reminders (Scheduled daily) ─────────────────────────────
+# Task 1: Interview Reminders (Scheduled daily)
 
 @celery_app.task(name="backend.tasks.send_interview_reminders", bind=True)
 def send_interview_reminders(self):
@@ -77,7 +77,7 @@ def send_interview_reminders(self):
                 Application.interview_date != None,
                 Application.interview_date >= now,
                 Application.interview_date <= window_end,
-                Application.status.in_(["Shortlisted", "Interviewed"]),
+                Application.status == "Shortlisted",
             )
             .all()
         )
@@ -128,7 +128,7 @@ def send_interview_reminders(self):
         return {"reminders_sent": sent, "timestamp": now.isoformat()}
 
 
-# ── Task 2: Monthly Placement Report (Scheduled 1st of month) ─────────────────
+# Task 2: Monthly Placement Report (Scheduled 1st of month)
 
 @celery_app.task(name="backend.tasks.generate_monthly_placement_report", bind=True)
 def generate_monthly_placement_report(self):
@@ -142,23 +142,12 @@ def generate_monthly_placement_report(self):
         from .models import Placement, Student, Company, Application
 
         now = datetime.now(timezone.utc).replace(tzinfo=None)
-        # Report covers the previous calendar month
-        first_of_this_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        first_of_prev_month = (first_of_this_month - timedelta(days=1)).replace(day=1)
+        month_label = now.strftime("%B %Y")
 
-        placements = (
-            Placement.query
-            .filter(
-                Placement.created_at >= first_of_prev_month,
-                Placement.created_at < first_of_this_month,
-            )
-            .all()
-        )
+        # Fetch all placements (all-time for demo; in production filter by prev month)
+        placements = Placement.query.all()
 
-        total_apps = Application.query.filter(
-            Application.applied_at >= first_of_prev_month,
-            Application.applied_at < first_of_this_month,
-        ).count()
+        total_apps = Application.query.count()
 
         rows_html = ""
         for p in placements:
@@ -175,7 +164,7 @@ def generate_monthly_placement_report(self):
                 f"</tr>"
             )
 
-        month_label = first_of_prev_month.strftime("%B %Y")
+
         html = f"""<!DOCTYPE html>
 <html>
 <head>
@@ -212,14 +201,14 @@ def generate_monthly_placement_report(self):
 
         reports_dir = os.path.join(_instance_dir(), "reports")
         os.makedirs(reports_dir, exist_ok=True)
-        filename = f"placement_report_{first_of_prev_month.strftime('%Y_%m')}.html"
+        filename = f"placement_report_{now.strftime('%Y_%m')}.html"
         filepath = os.path.join(reports_dir, filename)
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(html)
 
         log.info("[REPORT] Saved %s", filepath)
 
-        # ── Email to admin if SMTP is ready ──────────────────────────────────
+        # Email to admin if SMTP is ready
         if _mail_ready(app):
             try:
                 from flask_mail import Message
@@ -240,7 +229,7 @@ def generate_monthly_placement_report(self):
         return {"report": filename, "placements": len(placements)}
 
 
-# ── Task 2b: Daily Deadline Reminders (Scheduled daily) ───────────────────────
+# Task 2b: Daily Deadline Reminders (Scheduled daily)
 
 @celery_app.task(name="backend.tasks.send_deadline_reminders", bind=True)
 def send_deadline_reminders(self):
@@ -304,7 +293,7 @@ def send_deadline_reminders(self):
         return {"reminded": reminded}
 
 
-# ── Task 4: Monthly Company Report (Scheduled 1st of month) ───────────────────
+# Task 4: Monthly Company Report (Scheduled 1st of month)
 
 @celery_app.task(name="backend.tasks.generate_monthly_company_report", bind=True)
 def generate_monthly_company_report(self):
@@ -408,7 +397,7 @@ def generate_monthly_company_report(self):
         return {"companies_reported": sent_count, "month": month_label}
 
 
-# ── Task 3: Student CSV Export (User-triggered) ────────────────────────────────
+# Task 3: Student CSV Export (User-triggered)
 
 @celery_app.task(name="backend.tasks.export_student_csv", bind=True)
 def export_student_csv(self, student_id: int):
@@ -491,7 +480,7 @@ def export_student_csv(self, student_id: int):
         return {"status": "done", "file": filename, "rows": len(applications)}
 
 
-# ── Task 4: Company CSV Export (User-triggered) ────────────────────────────────
+# Task 4: Company CSV Export (User-triggered)
 
 @celery_app.task(name="backend.tasks.export_company_csv", bind=True)
 def export_company_csv(self, company_id: int):
