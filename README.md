@@ -145,3 +145,37 @@ sudo service redis-server start
 
 ---
 
+## Automated Testing
+
+The project includes a `pytest`-based test suite covering authentication, validation, and route protection.
+
+### Test File Location
+```
+backend/tests/test_app.py
+```
+
+### Tests Included
+
+| Test | Description | Expected |
+| :--- | :--- | :--- |
+| `test_home` | API root health check | `200 OK` |
+| `test_register` | Valid student registration | `201 Created` |
+| `test_short_password` | Password under 6 characters | `400 Bad Request` |
+| `test_login` | Valid login returns JWT token | `200 OK + access_token` |
+| `test_wrong_password` | Invalid credentials | `401 Unauthorized` |
+| `test_dashboard_without_token` | Accessing protected route without JWT | `401 Unauthorized` |
+
+### Running Tests
+
+```bash
+# Install pytest (once)
+pip install pytest
+
+# Run from project root
+pytest backend/tests/test_app.py -v
+```
+
+> **Note:** Tests use an isolated in-memory SQLite database and do not affect the production database.
+
+---
+
